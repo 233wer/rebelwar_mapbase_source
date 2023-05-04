@@ -122,6 +122,8 @@ public:
 	CNPC_BaseZombie( void );
 	~CNPC_BaseZombie( void );
 
+	
+
 	void Spawn( void );
 	void Precache( void );
 	void StartTouch( CBaseEntity *pOther );
@@ -236,6 +238,10 @@ public:
 	virtual float  GetAutoAimRadius();
 	virtual void TranslateNavGoal( CBaseEntity *pEnemy, Vector &chasePosition );
 
+
+	
+	
+	
 	bool OnInsufficientStopDist( AILocalMoveGoal_t *pMoveGoal, float distClear, AIMoveResult_t *pResult );
 
 	virtual	bool		AllowedToIgnite( void ) { return true; }
@@ -248,6 +254,8 @@ public:
 protected:
 
 	CSoundPatch	*m_pMoanSound;
+
+	
 
 	bool	m_fIsTorso;			// is this is a half-zombie?
 	bool	m_fIsHeadless;		// is this zombie headless
@@ -293,7 +301,7 @@ protected:
 
 private:
 	bool m_bIsSlumped;
-
+	
 };
 
 #endif // NPC_BASEZOMBIE_H

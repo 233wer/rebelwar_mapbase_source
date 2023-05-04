@@ -139,6 +139,14 @@ class CNPC_PoisonZombie : public CAI_BlendingHost<CNPC_BaseZombie>
 {
 	DECLARE_CLASS( CNPC_PoisonZombie, CAI_BlendingHost<CNPC_BaseZombie> );
 
+private:
+	int m_pos_camp = 0;
+	int m_pos_choosemode = 0;
+	int m_extra = 0;
+	int m_fixed = 0;
+
+
+
 public:
 
 	//
@@ -177,7 +185,7 @@ public:
 	virtual void Spawn( void );
 	virtual void Precache( void );
 	virtual void SetZombieModel( void );
-
+	void PoisonZombieSkinChoose(void);//For Poison Zombie
 	virtual Class_T Classify( void );
 	virtual void Event_Killed( const CTakeDamageInfo &info );
 	virtual int OnTakeDamage_Alive( const CTakeDamageInfo &inputInfo );
@@ -242,7 +250,10 @@ BEGIN_DATADESC( CNPC_PoisonZombie )
 	DEFINE_FIELD( m_flNextCrabThrowTime, FIELD_TIME ),
 
 	DEFINE_FIELD( m_flNextPainSoundTime, FIELD_TIME ),
-
+	DEFINE_KEYFIELD(m_pos_choosemode, FIELD_INTEGER, "choosemode_posion"),//0:All(effected by camp) 1.Fixed Type
+	DEFINE_KEYFIELD(m_pos_camp, FIELD_INTEGER, "camp"),//0:Citizen(Include CP) 1:Combine (Include Elite)
+	DEFINE_KEYFIELD(m_extra, FIELD_INTEGER, "extra"),//0:No extra 1:No CP 2:No elite
+	DEFINE_KEYFIELD(m_fixed, FIELD_INTEGER, "fixed "), //0:Citizen 1 : Rebel 2 : Medic 3 : CP 5 : Combine 6 : Shotgunner 7 : Prison Guard 8 : Elite
 	DEFINE_FIELD( m_bNearEnemy, FIELD_BOOLEAN ),
 
 	// NOT serialized:
@@ -303,6 +314,8 @@ void CNPC_PoisonZombie::Spawn( void )
 	CapabilitiesClear();
 	CapabilitiesAdd( bits_CAP_MOVE_GROUND | bits_CAP_INNATE_MELEE_ATTACK1 | bits_CAP_INNATE_RANGE_ATTACK1 | bits_CAP_INNATE_RANGE_ATTACK2 );
 
+	PoisonZombieSkinChoose();
+
 	BaseClass::Spawn();
 
 	CPASAttenuationFilter filter( this, ATTN_IDLE );
@@ -352,6 +365,65 @@ void CNPC_PoisonZombie::Spawn( void )
 		EnableCrab( i, ( nBitMask & ( 1 << i ) ) != 0 );
 	}
 }
+
+void CNPC_PoisonZombie::PoisonZombieSkinChoose(void)
+{
+	if (m_pos_choosemode == 0)
+	{
+		if (m_pos_camp == 0)//Citizen Type(Include CP)
+		{
+			if (m_extra == 1)//No CP
+			{
+				m_nSkin = random->RandomInt(0, 2);
+			}
+			else//ALL
+			{
+				m_nSkin = random->RandomInt(0, 3);
+			}
+
+
+		}
+		if (m_pos_camp == 1)//Combine Type
+		{
+			
+			if (m_extra == 2)//No Elite
+			{
+				m_nSkin = random->RandomInt(5, 7);
+			}
+			else//ALL
+			{
+				m_nSkin = random->RandomInt(5, 8);
+			}
+
+
+
+		}
+
+
+
+	}
+	if (m_pos_choosemode == 1)
+	{
+		if (m_fixed)
+		{
+			m_nSkin = m_fixed;
+			if (m_nSkin == 4)
+			{
+				Warning("This is a normal poison zombie/n");
+			}
+			
+		}
+		else
+		{
+			Warning("Can Not find SKIN_TYPE/n");
+		}
+	
+
+	}
+
+}
+
+
 
 
 //-----------------------------------------------------------------------------

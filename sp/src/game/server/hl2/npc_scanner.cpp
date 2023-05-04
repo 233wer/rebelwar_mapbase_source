@@ -390,18 +390,18 @@ void CNPC_CScanner::Gib( void )
 	}
 
 	// Add a random chance of spawning a battery...
-	if ( !HasSpawnFlags(SF_NPC_NO_WEAPON_DROP) && random->RandomFloat( 0.0f, 1.0f) < 0.3f )
-	{
-		CItem *pBattery = (CItem*)CreateEntityByName("item_battery");
-		if ( pBattery )
-		{
-			pBattery->SetAbsOrigin( GetAbsOrigin() );
-			pBattery->SetAbsVelocity( GetAbsVelocity() );
-			pBattery->SetLocalAngularVelocity( GetLocalAngularVelocity() );
-			pBattery->ActivateWhenAtRest();
-			pBattery->Spawn();
-		}
-	}
+	//if ( !HasSpawnFlags(SF_NPC_NO_WEAPON_DROP) && random->RandomFloat( 0.0f, 1.0f) < 0.3f )
+	//{
+	///	CItem *pBattery = (CItem*)CreateEntityByName("item_battery");
+	///	if ( pBattery )
+	//	{
+		//	pBattery->SetAbsOrigin( GetAbsOrigin() );
+	////		pBattery->SetAbsVelocity( GetAbsVelocity() );
+	///		pBattery->SetLocalAngularVelocity( GetLocalAngularVelocity() );
+		////	pBattery->ActivateWhenAtRest();
+		///	pBattery->Spawn();
+///		}
+//	}
 
 	DeployMine();
 

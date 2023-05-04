@@ -27,7 +27,10 @@
 
 // ACT_FLINCH_PHYSICS
 
-
+extern ConVar m_medic_change("m_medic_change", "1", FCVAR_CHEAT);
+//I set this convar,because normal states,game prefer to use medic skins,When Set this,If use mode 1 or mode 5£¬Medic skins zombie will have less.Though it may be effect the game
+//Because i want the medic zombie drops health vial,fewer medic zombies can control the balance
+//2023/4/22 change the convar name,bacause i do not want medic zombies only change to rebel,rebel zombies will also drop supplies
 ConVar	sk_zombie_health( "sk_zombie_health","0");
 
 envelopePoint_t envZombieMoanVolumeFast[] =
@@ -92,6 +95,9 @@ envelopePoint_t envZombieMoanIgnited[] =
 #endif
 
 
+//#define SF_ZOMBIE_METROPOLICE ( 1 << 30 )
+
+
 //=============================================================================
 //=============================================================================
 
@@ -99,6 +105,15 @@ class CZombie : public CAI_BlendingHost<CNPC_BaseZombie>
 {
 	DECLARE_DATADESC();
 	DECLARE_CLASS( CZombie, CAI_BlendingHost<CNPC_BaseZombie> );
+
+private:
+
+	int m_skinchoose_mode = 0;
+	int m_changepos = 0;
+	int m_typecity = 0;
+	int m_mustdroploot = 0;
+	int m_medicloottype = 0;
+	int m_iscop = 0;
 
 public:
 	CZombie()
@@ -109,12 +124,17 @@ public:
 
 	void Spawn( void );
 	void Precache( void );
+	
+	void ZombieSkinChoose(void);//For Classic Zombie
+	void ZombieDeathLoot(void);
+	void Event_Killed(const CTakeDamageInfo &info);
 
 	void SetZombieModel( void );
 	void MoanSound( envelopePoint_t *pEnvelope, int iEnvelopeSize );
 	bool ShouldBecomeTorso( const CTakeDamageInfo &info, float flDamageThreshold );
 	bool CanBecomeLiveTorso() { return !m_fIsHeadless; }
 
+	
 	void GatherConditions( void );
 
 	int SelectFailSchedule( int failedSchedule, int failedTask, AI_TaskFailureCode_t taskFailCode );
@@ -239,6 +259,18 @@ BEGIN_DATADESC( CZombie )
 	DEFINE_EMBEDDED( m_DurationDoorBash ),
 	DEFINE_EMBEDDED( m_NextTimeToStartDoorBash ),
 	DEFINE_FIELD( m_vPositionCharged, FIELD_POSITION_VECTOR ),
+	DEFINE_KEYFIELD(m_skinchoose_mode, FIELD_INTEGER, "zombieskinchoose"),//1:Nodefine 2:Citzen Only 3:Rebel Only 4:Medic Only 5:All
+	DEFINE_KEYFIELD(m_typecity, FIELD_INTEGER, "typecity"),//Set to 1 will make the zombie that type is citizen spawns in blue clothes,Affect to Mode 1,Mode 2 and Mode 5.But it will not effect to zombie that changed from medic type
+	DEFINE_KEYFIELD(m_mustdroploot, FIELD_INTEGER, "zombiemustloot"),//0:no 1:yes
+	DEFINE_KEYFIELD(m_medicloottype, FIELD_INTEGER, "medicloottype"),//0:random 1:vial 2:kit
+	DEFINE_KEYFIELD(m_iscop, FIELD_INTEGER, "iscop"),//0:no 1:yes
+	/*
+	int m_typecitizen_allow = 1;//Pemission for skin 0(1),1(2)
+int m_typerebel_allow = 1;//Pemission for skin 2(3),3(4)
+int m_typerebelmedic_allow = 1;//Pemission for skin 4(5),5(6)
+
+int m_typeall = 0;//Premission for all types(include metropolice)
+*/
 
 END_DATADESC()
 
@@ -253,6 +285,7 @@ void CZombie::Precache( void )
 	PrecacheModel( "models/zombie/classic.mdl" );
 	PrecacheModel( "models/zombie/classic_torso.mdl" );
 	PrecacheModel( "models/zombie/classic_legs.mdl" );
+
 
 	PrecacheScriptSound( "Zombie.FootstepRight" );
 	PrecacheScriptSound( "Zombie.FootstepLeft" );
@@ -271,6 +304,9 @@ void CZombie::Precache( void )
 	PrecacheScriptSound( "NPC_BaseZombie.Moan2" );
 	PrecacheScriptSound( "NPC_BaseZombie.Moan3" );
 	PrecacheScriptSound( "NPC_BaseZombie.Moan4" );
+
+	UTIL_PrecacheOther("item_healthvial");
+	UTIL_PrecacheOther("item_healthkit");
 }
 
 //-----------------------------------------------------------------------------
@@ -278,6 +314,8 @@ void CZombie::Precache( void )
 void CZombie::Spawn( void )
 {
 	Precache();
+
+	ZombieSkinChoose();//Choose skins in different situations
 
 #ifdef MAPBASE
 	if( Q_strstr( GetClassname(), "torso" ) )
@@ -315,11 +353,15 @@ void CZombie::Spawn( void )
 	CapabilitiesClear();
 
 	//GetNavigator()->SetRememberStaleNodes( false );
-
+	
 	BaseClass::Spawn();
+
+	
+	//m_nSkin = random->RandomInt(0, 5);//It has 7 skins,Skin 7 is metropolice zombie,i want it only spawn by setting a flag. Note:Skin1 is num.0//move this to new function
 
 	m_flNextMoanSound = gpGlobals->curtime + random->RandomFloat( 1.0, 4.0 );
 }
+
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -354,6 +396,194 @@ int CZombie::SelectSchedule ( void )
 
 	return BaseClass::SelectSchedule();
 }
+
+//-----------------------------------------------------------------------------
+//Purpose:Choose Zombie`s Skin
+//-----------------------------------------------------------------------------
+
+void CZombie::ZombieSkinChoose(void)
+{
+	if (m_iscop == 1)//has the flag "MetroPolice Zombie"
+	{
+		m_nSkin = 6;
+	}
+	else
+	{
+
+		if (m_skinchoose_mode == 1)
+		{
+			m_nSkin = random->RandomInt(0, 1);//Citizen
+
+
+
+			if (m_typecity == 1 && m_nSkin == 0)//Change refugee zombie to citizen zombie
+			{
+				m_nSkin = 1;
+
+			}
+
+
+
+
+		}
+		if (m_skinchoose_mode == 2)
+		{
+			m_nSkin = random->RandomInt(2, 3);//Rebel
+		}
+		if (m_skinchoose_mode == 3)
+		{
+			m_nSkin = random->RandomInt(4, 5);//Medic
+		}
+		if (m_skinchoose_mode == 4)
+		{
+
+			//Default 
+
+			m_nSkin = random->RandomInt(0, 6);//All Types
+
+			if (m_typecity == 1 && m_nSkin == 0)//Change refugee zombie to citizen zombie
+			{
+				m_nSkin = 1;
+
+			}
+
+
+			//If is medic
+
+
+
+
+
+
+			//Balance control(reduce medic zombie spawn times)
+
+
+
+			if ((m_nSkin == 4 || m_nSkin == 5) && m_medic_change.GetInt() == 1)
+			{
+
+				//Choose a value
+
+				m_changepos = random->RandomInt(0, 3);
+
+
+
+				//If is medic
+
+
+
+				//change to different skins
+
+				if (m_changepos == 0)
+				{
+
+					m_nSkin = random->RandomInt(4, 5);//No change
+
+				}
+				else if (m_changepos == 1)
+				{
+
+					m_nSkin = random->RandomInt(2, 3);//Change to Rebel
+
+
+				}
+				else if (m_changepos == 2)
+				{
+
+					m_nSkin = random->RandomInt(0, 1);//Change to Citizens
+
+
+
+
+				}
+				else if (m_changepos == 3)
+				{
+
+					m_nSkin = 6;//Change to metropolice
+
+
+				}
+
+
+
+
+
+			}
+		}
+		if (m_skinchoose_mode == 0)
+		{
+
+			//Default
+
+			m_nSkin = random->RandomInt(0, 5);//It has 7 skins,Skin 7 is metropolice zombie,i want it only spawn by setting a flag. Note:Skin1 is num.0
+
+			if (m_typecity == 1 && m_nSkin == 0)//Change refugee zombie to citizen zombie
+			{
+				m_nSkin = 1;
+
+			}
+
+
+
+			//If is Medic
+
+
+
+			//Balance control(reduce medic zombie spawn times)
+
+			if ((m_nSkin == 4 || m_nSkin == 5) && m_medic_change.GetInt() == 1)
+			{
+
+				//Choose a value
+
+
+				m_changepos = random->RandomInt(0, 2);
+
+
+
+
+
+				//change to different skins
+
+				if (m_changepos == 0)
+				{
+
+					m_nSkin = random->RandomInt(4, 5);//No change
+
+				}
+				else if (m_changepos == 1)
+				{
+
+					m_nSkin = random->RandomInt(2, 3);//Change to Rebel
+
+
+				}
+				else if (m_changepos == 2)
+				{
+
+					m_nSkin = random->RandomInt(0, 1);//Change to Citizens
+
+
+
+				}
+				//There is no CP,Because mode 1 cannot spawn CPs
+
+
+
+
+
+
+			}
+
+
+		}
+
+
+	}
+	
+}
+
+
 
 //-----------------------------------------------------------------------------
 // Purpose: Sound of a footstep
@@ -420,8 +650,96 @@ void CZombie::PainSound( const CTakeDamageInfo &info )
 //-----------------------------------------------------------------------------
 void CZombie::DeathSound( const CTakeDamageInfo &info ) 
 {
+	ZombieDeathLoot();
 	EmitSound( "Zombie.Die" );
 }
+
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+// Input  : &info - 
+// Output : Returns true on success, false on failure.
+//-----------------------------------------------------------------------------
+void CZombie::Event_Killed(const CTakeDamageInfo &info)
+{
+	
+	if (GetHealth() == 0)
+	{
+		ZombieDeathLoot();
+	}
+
+	
+	BaseClass::Event_Killed(info);
+}
+
+
+void CZombie::ZombieDeathLoot(void)
+{
+	//medic
+		if (m_nSkin == 4 || m_nSkin == 5)//is medic
+		{
+			if (m_medicloottype == 0)//random
+			{
+				int allowdrop = random->RandomInt(0, 1);
+				
+				
+				if (allowdrop == 1 || m_mustdroploot == 1)
+				{
+					int randomtype = random->RandomFloat(0.0f, 2.0f);
+						
+						if (randomtype > 0.1f)
+						{
+							DropItem("item_healthvial", WorldSpaceCenter() + RandomVector(-4, 4), RandomAngle(0, 360)); //drop small health vial
+						}
+						else if (randomtype <= 0.1f)
+						{
+							DropItem("item_healthkit", WorldSpaceCenter() + RandomVector(-4, 4), RandomAngle(0, 360));//drop large health kit
+						}
+				}
+
+
+			}
+
+			if (m_medicloottype == 1)//vial
+			{
+				int allowdrop = random->RandomInt(0, 1);
+
+
+				if (allowdrop == 1 || m_mustdroploot == 1)
+				{
+					
+						DropItem("item_healthvial", WorldSpaceCenter() + RandomVector(-4, 4), RandomAngle(0, 360)); //drop small health vial
+					
+				}
+
+			}
+
+			if (m_medicloottype == 2)//kit
+			{
+				int allowdrop = random->RandomInt(0, 1);
+
+
+				if (allowdrop == 1 || m_mustdroploot == 1)
+				{
+
+					DropItem("item_healthkit", WorldSpaceCenter() + RandomVector(-4, 4), RandomAngle(0, 360));//drop large health kit
+
+				}
+
+			}
+
+
+
+
+
+
+
+		}
+
+	
+}
+
+
 
 //-----------------------------------------------------------------------------
 // Purpose: 

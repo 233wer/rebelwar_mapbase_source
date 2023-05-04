@@ -1791,6 +1791,8 @@ void CNPC_BaseZombie::Spawn( void )
 
 	SetZombieModel();
 
+	
+
 	NPCInit();
 
 	m_bIsSlumped = false;

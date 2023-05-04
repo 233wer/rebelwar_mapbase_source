@@ -13,6 +13,8 @@
 
 #include "baseprojectile.h"
 
+
+
 #if defined( CLIENT_DLL )
 
 #define CBaseGrenade C_BaseGrenade
@@ -53,6 +55,8 @@ public:
 	DECLARE_ENT_SCRIPTDESC();
 #endif
 
+
+
 	virtual void		Precache( void );
 
 	virtual void		Explode( trace_t *pTrace, int bitsDamageType );
@@ -72,7 +76,7 @@ public:
 	virtual void		BounceSound( void );
 	virtual int			BloodColor( void ) { return DONT_BLEED; }
 	virtual void		Event_Killed( const CTakeDamageInfo &info );
-
+	
 	virtual float		GetShakeAmplitude( void ) { return 25.0; }
 	virtual float		GetShakeRadius( void ) { return 750.0; }
 
@@ -143,7 +147,7 @@ public:
 	CNetworkVar( float, m_flNextAttack );
 	float				m_flDetonateTime;			// Time at which to detonate.
 	float				m_flWarnAITime;				// Time at which to warn the AI
-
+	
 protected:
 
 	CNetworkVar( float, m_flDamage );		// Damage to inflict.
@@ -161,5 +165,6 @@ private:
 	CBaseGrenade( const CBaseGrenade & ); // not defined, not accessible
 
 };
+
 
 #endif // BASEGRENADE_SHARED_H

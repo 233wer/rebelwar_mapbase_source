@@ -185,7 +185,23 @@ void CNPC_CombineS::PrescheduleThink( void )
 		}
 	}
 	*/
+	//CBaseEntity *pTarget = GetEnemy();
+	//if (pTarget )
+	//{
+	////	//float flDistSq = GetEnemy()->WorldSpaceCenter().DistToSqr(WorldSpaceCenter());
 
+	///	Vector pos = pTarget->GetAbsOrigin();
+		//SetAbsOrigin(pos);
+
+		
+	///	AI_NavGoal_t goal(m_vInterruptSavePosition, ACT_RUN, AIN_HULL_TOLERANCE);
+
+	//	GetNavigator()->SetGoal(goal, AIN_CLEAR_TARGET);
+	//	GetNavigator()->SetArrivalDirection(pos - goal.dest);
+		//AI_NavGoal_t goal(pos, ACT_RUN);
+		//GetNavigator()->SetGoal(goal);
+
+	//}
 	BaseClass::PrescheduleThink();
 }
 

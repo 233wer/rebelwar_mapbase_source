@@ -1,5 +1,5 @@
 static char g_Script_vscript_server[] = R"vscript(
-//========== Copyright © 2008, Valve Corporation, All rights reserved. ========
+//
 //
 // Purpose:
 //

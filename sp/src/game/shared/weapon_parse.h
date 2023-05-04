@@ -81,7 +81,13 @@ public:
 	// Indicates the currently loaded data is from a map-specific script and should be flushed.
 	bool					bCustom;
 #endif
-
+//Ironsight Code	
+	Vector					vecIronsightPosOffset;
+	QAngle					angIronsightAngOffset;
+	float					flIronsightFOVOffset;
+	void                    IfHasIronSightData(KeyValues *pKeyValuesData);
+	int                     m_ifHasIronsights;
+//
 // SHARED
 	char					szClassName[MAX_WEAPON_STRING];
 	char					szPrintName[MAX_WEAPON_STRING];			// Name for showing in HUD, etc.

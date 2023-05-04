@@ -40,6 +40,7 @@ const char *pWeaponSoundCategories[ NUM_SHOOT_SOUND_TYPES ] =
 extern const char *pWeaponSoundCategories[ NUM_SHOOT_SOUND_TYPES ];
 #endif
 
+extern ConVar IronSight("IronSight", "0", FCVAR_CHEAT);
 int GetWeaponSoundFromString( const char *pszString )
 {
 	for ( int i = EMPTY; i < NUM_SHOOT_SOUND_TYPES; i++ )
@@ -364,6 +365,9 @@ bool ReadCustomWeaponDataFromFileForSlot( IFileSystem* filesystem, const char *s
 
 FileWeaponInfo_t::FileWeaponInfo_t()
 {
+	//ironsight
+	m_ifHasIronsights = 0;//set to 0,because player have no weapon when spawn
+	
 	bParsedScript = false;
 	bLoadedHudElements = false;
 	szClassName[0] = 0;
@@ -417,6 +421,42 @@ extern ConVar hud_fastswitch;
 
 void FileWeaponInfo_t::Parse( KeyValues *pKeyValuesData, const char *szWeaponName )
 {
+	//IronSight Code
+	
+	KeyValues *pSights = pKeyValuesData->FindKey("IronSight");
+	if (pSights)
+	{
+		vecIronsightPosOffset.x = pSights->GetFloat("forward", 0.0f);
+		vecIronsightPosOffset.y = pSights->GetFloat("right", 0.0f);
+		vecIronsightPosOffset.z = pSights->GetFloat("up", 0.0f);
+
+		angIronsightAngOffset[PITCH] = pSights->GetFloat("pitch", 0.0f);
+		angIronsightAngOffset[YAW] = pSights->GetFloat("yaw", 0.0f);
+		angIronsightAngOffset[ROLL] = pSights->GetFloat("roll", 0.0f);
+
+		flIronsightFOVOffset = pSights->GetFloat("fov", 0.0f);
+		//m_ifHasIronsights = 1; //have ironsight data
+
+	
+	}
+	else
+	{
+		//m_ifHasIronsights = 0;//have no ironsight data
+		//note: you can set a bool here if you'd like to disable ironsights for weapons with no IronSight-key
+		vecIronsightPosOffset = vec3_origin;
+		angIronsightAngOffset.Init();
+		flIronsightFOVOffset = 0.0f;
+	
+	
+
+	}
+	
+	///
+	
+	
+	
+	
+	
 	// Okay, we tried at least once to look this up...
 	bParsedScript = true;
 
@@ -536,4 +576,3 @@ void FileWeaponInfo_t::Parse( KeyValues *pKeyValuesData, const char *szWeaponNam
 		}
 	}
 }
-

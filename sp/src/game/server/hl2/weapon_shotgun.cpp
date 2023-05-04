@@ -314,6 +314,7 @@ void CWeaponShotgun::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatC
 			CBaseCombatWeapon::Operator_HandleAnimEvent( pEvent, pOperator );
 			break;
 	}
+
 }
 
 
@@ -372,6 +373,8 @@ float CWeaponShotgun::GetFireRate()
 //-----------------------------------------------------------------------------
 bool CWeaponShotgun::StartReload( void )
 {
+	
+	DisableIronsights();
 	CBaseCombatCharacter *pOwner  = GetOwner();
 	
 	if ( pOwner == NULL )
@@ -865,6 +868,11 @@ CWeaponShotgun::CWeaponShotgun( void )
 //-----------------------------------------------------------------------------
 void CWeaponShotgun::ItemHolsterFrame( void )
 {
+	//if (GetOwner() && GetOwner()->IsPlayer())
+	//{
+	///	ConVar *pironsight = cvar->FindVar("IronSight");
+	///	pironsight->SetValue("1");
+	//}
 	// Must be player held
 	if ( GetOwner() && GetOwner()->IsPlayer() == false )
 		return;

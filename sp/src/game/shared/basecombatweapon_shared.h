@@ -19,6 +19,8 @@
 #include "weapon_proficiency.h"
 #include "utlmap.h"
 
+
+
 #if defined( CLIENT_DLL )
 #define CBaseCombatWeapon C_BaseCombatWeapon
 #endif
@@ -209,7 +211,11 @@ public:
 	// A derived weapon class should return true here so that weapon sounds, etc, can
 	//  apply the proper filter
 	virtual bool			IsPredicted( void ) const { return false; }
-
+//IronSight Code
+	Vector					GetIronsightPositionOffset(void) const;
+	QAngle					GetIronsightAngleOffset(void) const;
+	float					GetIronsightFOVOffset(void) const;
+//
 	virtual void			Spawn( void );
 	virtual void			Precache( void );
 
@@ -669,10 +675,24 @@ protected:
 #endif // TF
 
 public:
-
+    //Ironsight
+	virtual bool				HasIronsights(void) { return true; } //default yes; override and return false for weapons with no ironsights (like weapon_crowbar)
+	
+	bool					IsIronsighted(void);
+	void					ToggleIronsights(void);
+	void					EnableIronsights(void);
+	void					DisableIronsights(void);
+	void					SetIronsightTime(void);
+	void                    AllowUseIronSight(void);
+	int                     m_haveIronSight;
+	//void                    SetCrossHair(void);
+	//bool                    CanUseIronSight(void);
 	// Networked fields
 	CNetworkVar( int, m_nViewModelIndex );
-
+	//IronSight Networked Convars
+	CNetworkVar(bool, m_bIsIronsighted);
+	
+	CNetworkVar(float, m_flIronsightedTime);
 	// Weapon firing
 	CNetworkVar( float, m_flNextPrimaryAttack );						// soonest time ItemPostFrame will call PrimaryAttack
 	CNetworkVar( float, m_flNextSecondaryAttack );					// soonest time ItemPostFrame will call SecondaryAttack

@@ -29,6 +29,8 @@
 #include "hl2_player.h"
 #include "hl2_gamerules.h"
 
+
+
 #include "basecombatweapon.h"
 #include "basegrenade_shared.h"
 #include "grenade_frag.h"
@@ -44,6 +46,9 @@ enum
 	SQUAD_SLOT_ZOMBINE_SPRINT2,
 };
 
+//#define SF_ZOMBINE_ELITE ( 1 << 30 )
+
+
 #define MIN_SPRINT_TIME 3.5f
 #define MAX_SPRINT_TIME 5.5f
 
@@ -57,6 +62,8 @@ enum
 
 #define ZOMBINE_MAX_GRENADES 1
 
+#define ELITE_ZOMBINE_MAX_ENGEGYBALL 1
+
 int ACT_ZOMBINE_GRENADE_PULL;
 int ACT_ZOMBINE_GRENADE_WALK;
 int ACT_ZOMBINE_GRENADE_RUN;
@@ -68,10 +75,19 @@ int ACT_ZOMBINE_GRENADE_FLINCH_WEST;
 int ACT_ZOMBINE_GRENADE_FLINCH_EAST;
 
 int AE_ZOMBINE_PULLPIN;
-
+//extern int m_normalgrenade_in;
+extern int m_energyballin;
+extern int energyball_detonated;
+extern int m_energyballin;
+//extern int normalgrenade_detonated;
+//extern int m_normalgrenade_in;
+//extern int normalgrenade_detonated;
+//
 extern bool IsAlyxInDarknessMode();
+ConVar	cv_change_shotgunner("cv_change_shotgunner", "1", FCVAR_CHEAT);
+ConVar	sk_zombie_soldier_health("sk_zombie_soldier_health", "0");
 
-ConVar	sk_zombie_soldier_health( "sk_zombie_soldier_health","0");
+ConVar  cv_debug_elite("cv_debug_elite", "0", FCVAR_CHEAT);//Test For Elite Zombine
 
 float g_flZombineGrenadeTimes = 0;
 
@@ -80,11 +96,21 @@ class CNPC_Zombine : public CAI_BlendingHost<CNPC_BaseZombie>, public CDefaultPl
 	DECLARE_DATADESC();
 	DECLARE_CLASS( CNPC_Zombine, CAI_BlendingHost<CNPC_BaseZombie> );
 
+private:
+	int m_choosemode = 0;
+	int m_change_pos = 0;
+	int m_isElite = 0;
+	int m_ienergyball = 1;
+	int m_selectelite = 0;
+
+
+
 public:
 
 	void Spawn( void );
 	void Precache( void );
-
+	void ZombineSkinChoose(void);//For zombine
+	void EliteZombineSpecial(void);
 	void SetZombieModel( void );
 
 	virtual void PrescheduleThink( void );
@@ -132,7 +158,7 @@ public:
 	void DropGrenade( Vector vDir );
 
 	bool IsSprinting( void ) { return m_flSprintTime > gpGlobals->curtime;	}
-	bool HasGrenade( void ) { return m_hGrenade != NULL; }
+	bool HasGrenade(void) { return m_hGrenade != NULL; }
 
 	int TranslateSchedule( int scheduleType );
 
@@ -191,6 +217,9 @@ BEGIN_DATADESC( CNPC_Zombine )
 	DEFINE_FIELD( m_flSuperFastAttackTime, FIELD_TIME ),
 	DEFINE_FIELD( m_hGrenade, FIELD_EHANDLE ),
 	DEFINE_FIELD( m_flGrenadePullTime, FIELD_TIME ),
+	DEFINE_KEYFIELD(m_choosemode, FIELD_INTEGER, "choosemode"),
+	DEFINE_KEYFIELD(m_ienergyball, FIELD_INTEGER, "energyballcount"),
+	DEFINE_KEYFIELD(m_selectelite, FIELD_INTEGER, "selectelite"),
 #ifdef MAPBASE
 	DEFINE_KEYFIELD( m_iGrenadeCount, FIELD_INTEGER, "NumGrenades" ),
 	DEFINE_OUTPUT( m_OnGrenade, "OnPullGrenade" ),
@@ -199,6 +228,7 @@ BEGIN_DATADESC( CNPC_Zombine )
 #endif
 	DEFINE_INPUTFUNC( FIELD_VOID,	"StartSprint", InputStartSprint ),
 	DEFINE_INPUTFUNC( FIELD_VOID,	"PullGrenade", InputPullGrenade ),
+	
 END_DATADESC()
 
 //---------------------------------------------------------
@@ -229,7 +259,9 @@ void CNPC_Zombine::Spawn( void )
 	m_flFieldOfView		= 0.2;
 
 	CapabilitiesClear();
-
+	
+	
+	ZombineSkinChoose();
 	BaseClass::Spawn();
 
 	m_flSprintTime = 0.0f;
@@ -250,6 +282,8 @@ void CNPC_Zombine::Precache( void )
 	BaseClass::Precache();
 
 	PrecacheModel( "models/zombie/zombie_soldier.mdl" );
+	
+	PrecacheModel("models/items/combine_rifle_ammo01.mdl");
 
 	PrecacheScriptSound( "Zombie.FootstepRight" );
 	PrecacheScriptSound( "Zombie.FootstepLeft" );
@@ -280,8 +314,93 @@ void CNPC_Zombine::SetZombieModel( void )
 	SetActivity( ACT_IDLE );
 }
 
+void CNPC_Zombine::ZombineSkinChoose(void)
+{
+	
+	if (m_selectelite == 1 || cv_debug_elite.GetInt() == 1)
+	{
+		m_nSkin = 3;
+		m_isElite = 1;
+		m_iGrenadeCount = 0;//No Normal Grenade
+
+
+
+
+
+	}
+	else
+	{
+
+		if (m_choosemode == 0)//Random Zombines(No Elite)
+		{
+			m_nSkin = random->RandomInt(0, 2);
+
+
+			//If shotgunner
+
+			if (cv_change_shotgunner.GetInt() == 1 && m_nSkin == 1)
+			{
+				m_change_pos = random->RandomInt(0, 1);
+				if (m_change_pos == 0)
+				{
+					m_nSkin = 1;
+				}
+				else
+				{
+					m_nSkin = 0;
+				}
+			}
+
+		}
+		if (m_choosemode == 1)//Default Zombine
+		{
+			m_nSkin = 0;
+		}
+		if (m_choosemode == 2)//Shotgunner Zombine
+		{
+			m_nSkin = 1;
+		}
+		if (m_choosemode == 3)//Dead Squad
+		{
+			m_nSkin = random->RandomInt(0, 1);
+
+
+			//If shotgunner
+
+			if (cv_change_shotgunner.GetInt() == 1 && m_nSkin == 1)
+			{
+				m_change_pos = random->RandomInt(0, 1);
+				if (m_change_pos == 0)
+				{
+					m_nSkin = 1;
+				}
+				else
+				{
+					m_nSkin = 0;
+				}
+			}
+
+
+		}
+		if (m_choosemode == 4 )//Prison Guard Zombine
+		{
+			m_nSkin = 2;
+		}
+
+
+		
+	
+	}
+	
+}
+
+
+
+
+
 void CNPC_Zombine::PrescheduleThink( void )
 {
+	
 	GatherGrenadeConditions();
 
 	if( gpGlobals->curtime > m_flNextMoanSound )
@@ -379,7 +498,7 @@ int CNPC_Zombine::MeleeAttack1Conditions ( float flDot, float flDist )
 {
 	int iBase = BaseClass::MeleeAttack1Conditions( flDot, flDist );
 
-	if( HasGrenade() )
+	if (HasGrenade() )
 	{
 		//Adrian: stop spriting if we get close enough to melee and we have a grenade
 		//this gives NPCs time to move away from you (before it was almost impossible cause of the high sprint speed)
@@ -394,7 +513,7 @@ int CNPC_Zombine::MeleeAttack1Conditions ( float flDot, float flDist )
 
 void CNPC_Zombine::GatherGrenadeConditions( void )
 {
-	if ( m_iGrenadeCount <= 0 )
+	if (m_iGrenadeCount <= 0 && m_isElite == 0)
 		return;
 
 	if ( g_flZombineGrenadeTimes > gpGlobals->curtime )
@@ -449,6 +568,7 @@ void CNPC_Zombine::GatherGrenadeConditions( void )
 				g_flZombineGrenadeTimes = gpGlobals->curtime + 10.0f;
 				SetCondition( COND_ZOMBINE_GRENADE );
 			}
+
 		}
 	}
 }
@@ -469,17 +589,24 @@ void CNPC_Zombine::DropGrenade( Vector vDir )
 	Vector vGunPos;
 	QAngle angles;
 	GetAttachment( "grenade_attachment", vGunPos, angles );
-
+	
 	IPhysicsObject *pPhysObj = m_hGrenade->VPhysicsGetObject();
+	
+	
+	   if ( pPhysObj == NULL )
+	    {
+	     	m_hGrenade->SetMoveType( MOVETYPE_VPHYSICS );
+	    	m_hGrenade->SetSolid( SOLID_VPHYSICS );
+	     	m_hGrenade->SetCollisionGroup( COLLISION_GROUP_WEAPON );
 
-	if ( pPhysObj == NULL )
-	{
-		m_hGrenade->SetMoveType( MOVETYPE_VPHYSICS );
-		m_hGrenade->SetSolid( SOLID_VPHYSICS );
-		m_hGrenade->SetCollisionGroup( COLLISION_GROUP_WEAPON );
+	   	   m_hGrenade->CreateVPhysics();
+	   }
+	
+	
 
-		m_hGrenade->CreateVPhysics();
-	}
+
+
+
 
 	if ( pPhysObj )
 	{
@@ -489,6 +616,7 @@ void CNPC_Zombine::DropGrenade( Vector vDir )
 
 		pPhysObj->RecheckCollisionFilter();
 	}
+
 
 	m_hGrenade = NULL;
 }
@@ -553,59 +681,157 @@ void CNPC_Zombine::HandleAnimEvent( animevent_t *pEvent )
 		QAngle angles;
 		GetAttachment( "grenade_attachment", vecStart, angles );
 
-		CBaseGrenade *pGrenade = Fraggrenade_Create( vecStart, vec3_angle, vec3_origin, AngularImpulse( 0, 0, 0 ), this, 3.5f, true );
-
-		if ( pGrenade )
+		if (m_isElite)
 		{
-			// Move physobject to shadow
-			IPhysicsObject *pPhysicsObject = pGrenade->VPhysicsGetObject();
+			GetAttachment("grenade_attachment", vecStart, angles);
+			m_energyballin = 1;//Show energyball effect
+			energyball_detonated = 0;//the created energyball haven`t been detonated 
 
-			if ( pPhysicsObject )
-			{
-				pGrenade->VPhysicsDestroyObject();
+		}
+		//else
+		///{
+			//m_normalgrenade_in = 1;//Show Grenade effect
+			//normalgrenade_detonated = 0;//Grenade Haven`t been detonated
+		//}
+		if (m_isElite == 0)
+		{ 
+		    CBaseGrenade *pGrenade = Fraggrenade_Create( vecStart, vec3_angle, vec3_origin, AngularImpulse( 0, 0, 0 ), this, 3.5f, true );
 
-				int iAttachment = LookupAttachment( "grenade_attachment");
+  
+		   if (pGrenade)
+		   {
 
-				pGrenade->SetMoveType( MOVETYPE_NONE );
-				pGrenade->SetSolid( SOLID_NONE );
-				pGrenade->SetCollisionGroup( COLLISION_GROUP_DEBRIS );
 
-				pGrenade->SetAbsOrigin( vecStart );
-				pGrenade->SetAbsAngles( angles );
 
-				pGrenade->SetParent( this, iAttachment );
+					// Move physobject to shadow
+					IPhysicsObject *pPhysicsObject = pGrenade->VPhysicsGetObject();
 
-				pGrenade->SetDamage( 200.0f );
-#ifdef MAPBASE
-				m_OnGrenade.Set(pGrenade, pGrenade, this);
-#endif
-				m_hGrenade = pGrenade;
-				
-				EmitSound( "Zombine.ReadyGrenade" );
-
-				// Tell player allies nearby to regard me!
-				CAI_BaseNPC **ppAIs = g_AI_Manager.AccessAIs();
-				CAI_BaseNPC *pNPC;
-				for ( int i = 0; i < g_AI_Manager.NumAIs(); i++ )
-				{
-					pNPC = ppAIs[i];
-
-					if( pNPC->Classify() == CLASS_PLAYER_ALLY || ( pNPC->Classify() == CLASS_PLAYER_ALLY_VITAL && pNPC->FVisible(this) ) )
+					if (pPhysicsObject)
 					{
-						int priority;
-						Disposition_t disposition;
+						pGrenade->VPhysicsDestroyObject();
+	
+						int iAttachment = LookupAttachment("grenade_attachment");
+						//int	energyball_attach = LookupAttachment("attach_ball");
+	
 
-						priority = pNPC->IRelationPriority(this);
-						disposition = pNPC->IRelationType(this);
 
-						pNPC->AddEntityRelationship( this, disposition, priority + 1 );
+						pGrenade->SetMoveType(MOVETYPE_NONE);
+						pGrenade->SetSolid(SOLID_NONE);
+						pGrenade->SetCollisionGroup(COLLISION_GROUP_NONE);
+		
+						pGrenade->SetAbsOrigin(vecStart);
+						pGrenade->SetAbsAngles(angles);
+
+						pGrenade->SetParent(this, iAttachment);
+
+
+
+						pGrenade->SetDamage(200.0f);
+#ifdef MAPBASE
+						m_OnGrenade.Set(pGrenade, pGrenade, this);
+#endif	
+						m_hGrenade = pGrenade;
+					
+						EmitSound("Zombine.ReadyGrenade");
+				
+						CAI_BaseNPC **ppAIs = g_AI_Manager.AccessAIs();
+						CAI_BaseNPC *pNPC;
+						for (int i = 0; i < g_AI_Manager.NumAIs(); i++)
+					{
+						pNPC = ppAIs[i];
+
+						if (pNPC->Classify() == CLASS_PLAYER_ALLY || (pNPC->Classify() == CLASS_PLAYER_ALLY_VITAL && pNPC->FVisible(this)))
+						{
+							int priority;
+							Disposition_t disposition;
+
+							priority = pNPC->IRelationPriority(this);
+							disposition = pNPC->IRelationType(this);
+
+							pNPC->AddEntityRelationship(this, disposition, priority + 1);
+						}
 					}
 				}
+
+				m_iGrenadeCount--;
+
 			}
 
-			m_iGrenadeCount--;
-		}
 
+
+		}
+		else if (m_isElite == 1 && m_ienergyball != 0)
+		{
+			
+			CBaseGrenade *pGrenade = EnergyBall_Create(vecStart, vec3_angle, vec3_origin, AngularImpulse(0, 0, 0), this, 3.5f, true);
+			pGrenade->SetModel("models/items/combine_rifle_ammo01.mdl");
+
+
+			if (pGrenade)
+			{
+
+
+
+				// Move physobject to shadow
+				IPhysicsObject *pPhysicsObject = pGrenade->VPhysicsGetObject();
+
+				if (pPhysicsObject)
+				{
+					pGrenade->VPhysicsDestroyObject();
+
+					int iAttachment = LookupAttachment("grenade_attachment");
+					//int	energyball_attach = LookupAttachment("attach_ball");
+
+
+
+					pGrenade->SetMoveType(MOVETYPE_NONE);
+					pGrenade->SetSolid(SOLID_NONE);
+					pGrenade->SetCollisionGroup(COLLISION_GROUP_NONE);
+
+					pGrenade->SetAbsOrigin(vecStart);
+					pGrenade->SetAbsAngles(angles);
+
+					pGrenade->SetParent(this, iAttachment);
+
+
+
+					pGrenade->SetDamage(200.0f);
+#ifdef MAPBASE
+					m_OnGrenade.Set(pGrenade, pGrenade, this);
+#endif	
+					m_hGrenade = pGrenade;
+
+					EmitSound("Zombine.ReadyGrenade");
+
+					CAI_BaseNPC **ppAIs = g_AI_Manager.AccessAIs();
+					CAI_BaseNPC *pNPC;
+					for (int i = 0; i < g_AI_Manager.NumAIs(); i++)
+					{
+						pNPC = ppAIs[i];
+
+						if (pNPC->Classify() == CLASS_PLAYER_ALLY || (pNPC->Classify() == CLASS_PLAYER_ALLY_VITAL && pNPC->FVisible(this)))
+						{
+							int priority;
+							Disposition_t disposition;
+
+							priority = pNPC->IRelationPriority(this);
+							disposition = pNPC->IRelationType(this);
+
+							pNPC->AddEntityRelationship(this, disposition, priority + 1);
+						}
+					}
+				}
+
+				m_ienergyball--;
+
+			}
+
+
+		}
+		
+	
+		
+		
 		return;
 	}
 

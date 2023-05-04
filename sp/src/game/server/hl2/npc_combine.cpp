@@ -218,6 +218,8 @@ DEFINE_INPUTFUNC( FIELD_STRING,	"Assault", InputAssault ),
 
 DEFINE_INPUTFUNC( FIELD_VOID,	"HitByBugbait",		InputHitByBugbait ),
 
+DEFINE_KEYFIELD(m_cancharge, FIELD_INTEGER, "canchargetoenemy"),
+
 #ifndef MAPBASE
 DEFINE_INPUTFUNC( FIELD_STRING,	"ThrowGrenadeAtTarget",	InputThrowGrenadeAtTarget ),
 #else
@@ -2257,6 +2259,12 @@ int CNPC_Combine::SelectFailSchedule( int failedSchedule, int failedTask, AI_Tas
 //-----------------------------------------------------------------------------
 bool CNPC_Combine::ShouldChargePlayer()
 {
+	if (m_cancharge == 1)	
+	{
+		return true;
+	}
+	
+	
 	return GetEnemy() && GetEnemy()->IsPlayer() && PlayerHasMegaPhysCannon() && !IsLimitingHintGroups();
 }
 
@@ -4399,6 +4407,7 @@ DEFINE_SCHEDULE
  "		TASK_WAIT_RANDOM				0.3"
  "		TASK_RANGE_ATTACK1				0"
  "		TASK_COMBINE_IGNORE_ATTACKS		0.5"
+
  ""
  "	Interrupts"
  "		COND_NEW_ENEMY"

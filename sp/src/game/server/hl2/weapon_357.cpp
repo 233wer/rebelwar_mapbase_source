@@ -252,6 +252,7 @@ CWeapon357::CWeapon357( void )
 	m_fMinRange2		= 24;
 	m_fMaxRange2		= 200;
 #endif
+
 }
 
 //-----------------------------------------------------------------------------
@@ -298,6 +299,8 @@ void CWeapon357::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChara
 			break;
 #endif
 	}
+	
+
 }
 
 #ifdef MAPBASE

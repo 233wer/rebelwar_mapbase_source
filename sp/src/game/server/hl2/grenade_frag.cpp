@@ -11,6 +11,8 @@
 #include "Sprite.h"
 #include "SpriteTrail.h"
 #include "soundent.h"
+#include "npc_BaseZombie.h"
+#include "prop_combine_ball.h"
 #ifdef MAPBASE
 #include "mapbase/ai_grenade.h"
 #endif
@@ -29,6 +31,10 @@ const float GRENADE_COEFFICIENT_OF_RESTITUTION = 0.2f;
 ConVar sk_plr_dmg_fraggrenade	( "sk_plr_dmg_fraggrenade","0");
 ConVar sk_npc_dmg_fraggrenade	( "sk_npc_dmg_fraggrenade","0");
 ConVar sk_fraggrenade_radius	( "sk_fraggrenade_radius", "0");
+
+ConVar sk_energyball_shotradius("sk_energyball_shotradius", "30");
+ConVar sk_energyball_shotduration("sk_energyball_shotduration", "2");
+ConVar sk_energyball_shot_mass("sk_energyball_shot_mass", "150");
 
 #define GRENADE_MODEL "models/Weapons/w_grenade.mdl"
 
@@ -59,6 +65,19 @@ public:
 	bool	IsCombineSpawned( void ) const { return m_combineSpawned; }
 	void	SetPunted( bool punt ) { m_punted = punt; }
 	bool	WasPunted( void ) const { return m_punted; }
+	
+	
+
+	
+	//Energy Balls Functions
+	void    EnergyBallRelease(void);
+	void    DelayThinkSpecial();
+	void   CreateEffectsEnergyBall(void);
+	void	SetTimerSpecial(float detonateDelay, float warnDelay);
+
+
+
+
 
 	// this function only used in episodic.
 #if defined(HL2_EPISODIC) && 0 // FIXME: HandleInteraction() is no longer called now that base grenade derives from CBaseAnimating
@@ -180,33 +199,193 @@ void CGrenadeFrag::OnRestore( void )
 //-----------------------------------------------------------------------------
 void CGrenadeFrag::CreateEffects( void )
 {
-	// Start up the eye glow
-	m_pMainGlow = CSprite::SpriteCreate( "sprites/redglow1.vmt", GetLocalOrigin(), false );
+	//if (m_normalgrenade_in == 1 )///If Zombine handed grenade,Set grenade effect 
+	///{
+		// Start up the eye glow
+		m_pMainGlow = CSprite::SpriteCreate("sprites/redglow1.vmt", GetLocalOrigin(), false);
 
-	int	nAttachment = LookupAttachment( "fuse" );
+		int	nAttachment = LookupAttachment("fuse");
 
-	if ( m_pMainGlow != NULL )
-	{
-		m_pMainGlow->FollowEntity( this );
-		m_pMainGlow->SetAttachment( this, nAttachment );
-		m_pMainGlow->SetTransparency( kRenderGlow, 255, 255, 255, 200, kRenderFxNoDissipation );
-		m_pMainGlow->SetScale( 0.2f );
-		m_pMainGlow->SetGlowProxySize( 4.0f );
-	}
+		if (m_pMainGlow != NULL)
+		{
+			m_pMainGlow->FollowEntity(this);
+			m_pMainGlow->SetAttachment(this, nAttachment);
+			m_pMainGlow->SetTransparency(kRenderGlow, 255, 255, 255, 200, kRenderFxNoDissipation);
+			m_pMainGlow->SetScale(0.2f);
+			m_pMainGlow->SetGlowProxySize(4.0f);
+		}
 
-	// Start up the eye trail
-	m_pGlowTrail	= CSpriteTrail::SpriteTrailCreate( "sprites/bluelaser1.vmt", GetLocalOrigin(), false );
+		// Start up the eye trail
+		m_pGlowTrail = CSpriteTrail::SpriteTrailCreate("sprites/bluelaser1.vmt", GetLocalOrigin(), false);
 
-	if ( m_pGlowTrail != NULL )
-	{
-		m_pGlowTrail->FollowEntity( this );
-		m_pGlowTrail->SetAttachment( this, nAttachment );
-		m_pGlowTrail->SetTransparency( kRenderTransAdd, 255, 0, 0, 255, kRenderFxNone );
-		m_pGlowTrail->SetStartWidth( 8.0f );
-		m_pGlowTrail->SetEndWidth( 1.0f );
-		m_pGlowTrail->SetLifeTime( 0.5f );
-	}
+		if (m_pGlowTrail != NULL)
+		{
+			m_pGlowTrail->FollowEntity(this);
+			m_pGlowTrail->SetAttachment(this, nAttachment);
+			m_pGlowTrail->SetTransparency(kRenderTransAdd, 255, 0, 0, 255, kRenderFxNone);
+			m_pGlowTrail->SetStartWidth(8.0f);
+			m_pGlowTrail->SetEndWidth(1.0f);
+			m_pGlowTrail->SetLifeTime(0.5f);
+
+		}
+		//if (m_energyballin == 1)///iF Zombine handed out energyball,Special For Elite Zombine
+		//{
+		//	CreateEffectsEnergyBall();
+		//}
+	//}
+	
 }
+void CGrenadeFrag::CreateEffectsEnergyBall(void)
+{
+	
+		Msg("Elite guy can pull energyball and can be read\n");
+		// Start up the eye glow
+		m_pMainGlow = CSprite::SpriteCreate("sprites/orangeflare1.vmt", GetLocalOrigin(), false);
+		int	energyball_attach = LookupAttachment("attach_ball");
+
+		Assert(m_pMainGlow);
+		if (m_pMainGlow != NULL)
+		{
+			m_pMainGlow->FollowEntity(this);
+			m_pMainGlow->SetAttachment(this, energyball_attach);
+			m_pMainGlow->SetTransparency(kRenderGlow, 255, 255, 255, 255, kRenderFxNoDissipation);
+			m_pMainGlow->SetScale(2.0f);
+			m_pMainGlow->SetGlowProxySize(16.0f);
+			m_pMainGlow->m_nRenderFX = kRenderFxStrobeFaster;
+		}
+
+		// Start up the eye trail
+
+
+	
+
+}
+
+
+
+
+void CGrenadeFrag::EnergyBallRelease(void)
+{
+	trace_t		tr;
+	Vector		vecSpot;// trace starts here!
+
+
+
+
+	m_takedamage = DAMAGE_NO;
+
+	SetThink(NULL);
+
+	vecSpot = GetAbsOrigin();
+	UTIL_TraceLine(vecSpot, vecSpot + Vector(0, 0, -32), MASK_SHOT_HULL, this, COLLISION_GROUP_NONE, &tr);
+
+	if (tr.startsolid)
+	{
+		// Since we blindly moved the explosion origin vertically, we may have inadvertently moved the explosion into a solid,
+		// in which case nothing is going to be harmed by the grenade's explosion because all subsequent traces will startsolid.
+		// If this is the case, we do the downward trace again from the actual origin of the grenade. (sjb) 3/8/2007  (for ep2_outland_09)
+		UTIL_TraceLine(GetAbsOrigin(), GetAbsOrigin() + Vector(0, 0, -32), MASK_SHOT_HULL, this, COLLISION_GROUP_NONE, &tr);
+	}
+
+	CBaseEntity *pOwner = m_pMainGlow->GetParent()->GetParent();
+	
+	Vector vecVelocity = vecSpot * 1000.0f;
+	
+	
+	//DMG_DISSOLVE
+	Explode(&tr, DMG_DISSOLVE);
+	CreateCombineBall(vecSpot,
+		vecVelocity,
+		sk_energyball_shotradius.GetFloat(),
+		sk_energyball_shot_mass.GetFloat(),
+		sk_energyball_shotduration.GetFloat(),
+		pOwner);
+	if (m_pMainGlow != NULL)
+	{
+		m_pMainGlow->Remove();
+
+	}
+	if (GetShakeAmplitude())
+	{
+		UTIL_ScreenShake(GetAbsOrigin(), GetShakeAmplitude(), 150.0, 1.0, GetShakeRadius(), SHAKE_START);
+	}
+
+
+	Msg("This is another detonate function,Not in basegrenade_shared.\n");
+	
+	
+}
+
+void CGrenadeFrag::DelayThinkSpecial()
+{
+	if (gpGlobals->curtime > m_flDetonateTime)
+	{
+
+		EnergyBallRelease();
+
+
+		return;
+	}
+
+	if (!m_bHasWarnedAI && gpGlobals->curtime >= m_flWarnAITime)
+	{
+#if !defined( CLIENT_DLL )
+		CSoundEnt::InsertSound(SOUND_DANGER, GetAbsOrigin(), 400, 1.5, this);
+#endif
+		m_bHasWarnedAI = true;
+	}
+
+	if (gpGlobals->curtime > m_flNextBlipTime)
+	{
+		BlipSound();
+
+		if (m_bHasWarnedAI)
+		{
+			m_flNextBlipTime = gpGlobals->curtime + FRAG_GRENADE_BLIP_FAST_FREQUENCY;
+		}
+		else
+		{
+			m_flNextBlipTime = gpGlobals->curtime + FRAG_GRENADE_BLIP_FREQUENCY;
+		}
+	}
+
+	SetNextThink(gpGlobals->curtime + 0.1);
+}
+
+
+CBaseGrenade *EnergyBall_Create(const Vector &position, const QAngle &angles, const Vector &velocity, const AngularImpulse &angVelocity, CBaseEntity *pOwner, float timer, bool combineSpawned)
+{
+	// Don't set the owner here, or the player can't interact with grenades he's thrown
+	CGrenadeFrag *pGrenade = (CGrenadeFrag *)CBaseEntity::Create("npc_grenade_frag", position, angles, pOwner);
+
+	pGrenade->SetTimerSpecial(timer, timer - FRAG_GRENADE_WARN_TIME);
+	pGrenade->SetVelocity(velocity, angVelocity);
+	pGrenade->SetThrower(ToBaseCombatCharacter(pOwner));
+	pGrenade->m_takedamage = DAMAGE_EVENTS_ONLY;
+	pGrenade->SetCombineSpawned(combineSpawned);
+
+	return pGrenade;
+}
+
+
+void CGrenadeFrag::SetTimerSpecial(float detonateDelay, float warnDelay)
+{
+	m_flDetonateTime = gpGlobals->curtime + detonateDelay;
+	m_flWarnAITime = gpGlobals->curtime + warnDelay;
+	SetThink(&CGrenadeFrag::DelayThinkSpecial);
+	SetNextThink(gpGlobals->curtime);
+
+	CreateEffectsEnergyBall();
+}
+
+
+
+
+
+
+
+
+
 
 bool CGrenadeFrag::CreateVPhysics()
 {
@@ -305,6 +484,25 @@ void CGrenadeFrag::Precache( void )
 
 	PrecacheScriptSound( "Grenade.Blip" );
 
+
+	//For EnergyBall
+
+	UTIL_PrecacheOther("env_citadel_energy_core");
+	UTIL_PrecacheOther("sparktrail");
+
+	PrecacheModel("sprites/lgtning.vmt");
+	PrecacheModel("sprites/orangeflare1.vmt");
+
+	PrecacheParticleSystem("striderbuster_attach");
+	PrecacheParticleSystem("striderbuster_attached_pulse");
+	PrecacheParticleSystem("striderbuster_explode_core");
+	PrecacheParticleSystem("striderbuster_explode_dummy_core");
+	PrecacheParticleSystem("striderbuster_break_flechette");
+	PrecacheParticleSystem("striderbuster_trail");
+	PrecacheParticleSystem("striderbuster_shotdown_trail");
+	PrecacheParticleSystem("striderbuster_break");
+	PrecacheParticleSystem("striderbuster_flechette_attached");
+
 	PrecacheModel( "sprites/redglow1.vmt" );
 	PrecacheModel( "sprites/bluelaser1.vmt" );
 
@@ -336,6 +534,8 @@ void CGrenadeFrag::OnPhysGunPickup( CBasePlayer *pPhysGunUser, PhysGunPickup_t r
 	{
 		// Give 'em a couple of seconds to aim and throw. 
 		SetTimer( 2.0f, 1.0f);
+		SetTimerSpecial(2.0f, 1.0f);
+
 		BlipSound();
 		m_flNextBlipTime = gpGlobals->curtime + FRAG_GRENADE_BLIP_FAST_FREQUENCY;
 	}
@@ -352,7 +552,22 @@ void CGrenadeFrag::DelayThink()
 {
 	if( gpGlobals->curtime > m_flDetonateTime )
 	{
-		Detonate();
+		//if (normalgrenade_detonated == 0 && m_normalgrenade_in == 1)/////If grenade haven`t been detonated and have grenade
+		//{
+			Detonate();
+		//}
+		//	
+		
+		
+		//if (energyball_detonated == 0 && m_energyballin == 1)/////If energy ball haven`t been detonated and have energyball
+		//{
+		//	EnergyBallRelease();
+		//}
+			
+	
+
+
+
 		return;
 	}
 
@@ -380,6 +595,14 @@ void CGrenadeFrag::DelayThink()
 
 	SetNextThink( gpGlobals->curtime + 0.1 );
 }
+
+
+
+
+
+
+
+
 
 void CGrenadeFrag::SetVelocity( const Vector &velocity, const AngularImpulse &angVelocity )
 {
@@ -414,13 +637,14 @@ bool CGrenadeFrag::HandleInteraction(int interactionType, void *data, CBaseComba
 		// give the grenade another five seconds seconds so the player can have the satisfaction of blowing up the barnacle with it
 		float timer = m_flDetonateTime - gpGlobals->curtime + 5.0f;
 		SetTimer( timer, timer - FRAG_GRENADE_WARN_TIME );
-
+		SetTimerSpecial(timer, timer - FRAG_GRENADE_WARN_TIME);
 		return true;
 	}
 	else if ( interactionType == g_interactionBarnacleVictimBite )
 	{
 		// detonate the grenade immediately 
 		SetTimer( 0, 0 );
+		SetTimerSpecial( 0, 0 );
 		return true;
 	}
 	else if ( interactionType == g_interactionBarnacleVictimReleased )
@@ -428,6 +652,7 @@ bool CGrenadeFrag::HandleInteraction(int interactionType, void *data, CBaseComba
 		// take the five seconds back off the timer.
 		float timer = MAX(m_flDetonateTime - gpGlobals->curtime - 5.0f,0.0f);
 		SetTimer( timer, timer - FRAG_GRENADE_WARN_TIME );
+		SetTimerSpecial(timer, timer - FRAG_GRENADE_WARN_TIME );
 		return true;
 	}
 	else
@@ -440,6 +665,7 @@ bool CGrenadeFrag::HandleInteraction(int interactionType, void *data, CBaseComba
 void CGrenadeFrag::InputSetTimer( inputdata_t &inputdata )
 {
 	SetTimer( inputdata.value.Float(), inputdata.value.Float() - FRAG_GRENADE_WARN_TIME );
+	
 }
 
 CBaseGrenade *Fraggrenade_Create( const Vector &position, const QAngle &angles, const Vector &velocity, const AngularImpulse &angVelocity, CBaseEntity *pOwner, float timer, bool combineSpawned )

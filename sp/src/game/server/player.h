@@ -262,7 +262,9 @@ public:
 	void					SetBodyPitch( float flPitch );
 
 	virtual void			UpdateOnRemove( void );
-
+	
+	//Ironsight crosshair control
+	void                    IronSightCrosshair(void);
 	static CBasePlayer		*CreatePlayer( const char *className, edict_t *ed );
 
 	virtual void			CreateViewModel( int viewmodelindex = 0 );

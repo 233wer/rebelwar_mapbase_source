@@ -18,6 +18,10 @@
 #include "client_virtualreality.h"
 #include "sourcevr/isourcevirtualreality.h"
 
+//#ifdef CLIENT_DLL  
+//#include "basecombatweapon_shared.h"
+
+//#endif
 #ifdef SIXENSE
 #include "sixense/in_sixense.h"
 #endif
@@ -88,6 +92,7 @@ bool CHudCrosshair::ShouldDraw( void )
 	C_BasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
 	if ( !pPlayer )
 		return false;
+
 
 	C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
 	if ( pWeapon && !pWeapon->ShouldDrawCrosshair() )

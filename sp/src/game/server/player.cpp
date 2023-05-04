@@ -21,6 +21,7 @@
 #include "isaverestore.h"
 #include "globalstate.h"
 #include "basecombatweapon.h"
+//#include "basecombatweapon_shared.h"
 #include "ai_basenpc.h"
 #include "ai_network.h"
 #include "ai_node.h"
@@ -1429,20 +1430,19 @@ int CBasePlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 	while (fTookDamage && (!ftrivial || g_pGameRules->Damage_IsTimeBased( bitsDamage ) ) && ffound && bitsDamage)
 	{
 		ffound = false;
-
+		//All suits update have been commented,because player suit isn`t hev.
 		if (bitsDamage & DMG_CLUB)
 		{
 			if (fmajor)
-				SetSuitUpdate("!HEV_DMG4", false, SUIT_NEXT_IN_30SEC);	// minor fracture
+				//SetSuitUpdate("!HEV_DMG4", false, SUIT_NEXT_IN_30SEC);	// minor fracture
 			bitsDamage &= ~DMG_CLUB;
 			ffound = true;
 		}
 		if (bitsDamage & (DMG_FALL | DMG_CRUSH))
 		{
-			if (fmajor)
-				SetSuitUpdate("!HEV_DMG5", false, SUIT_NEXT_IN_30SEC);	// major fracture
-			else
-				SetSuitUpdate("!HEV_DMG4", false, SUIT_NEXT_IN_30SEC);	// minor fracture
+			//if (!fmajor)
+		
+				//SetSuitUpdate("!HEV_DMG4", false, SUIT_NEXT_IN_30SEC);	// minor fracture
 	
 			bitsDamage &= ~(DMG_FALL | DMG_CRUSH);
 			ffound = true;
@@ -1450,8 +1450,8 @@ int CBasePlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		
 		if (bitsDamage & DMG_BULLET)
 		{
-			if (m_lastDamageAmount > 5)
-				SetSuitUpdate("!HEV_DMG6", false, SUIT_NEXT_IN_30SEC);	// blood loss detected
+			//if (m_lastDamageAmount > 5)
+				//SetSuitUpdate("!HEV_DMG6", false, SUIT_NEXT_IN_30SEC);	// blood loss detected
 			//else
 			//	SetSuitUpdate("!HEV_DMG0", false, SUIT_NEXT_IN_30SEC);	// minor laceration
 			
@@ -1461,10 +1461,10 @@ int CBasePlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 
 		if (bitsDamage & DMG_SLASH)
 		{
-			if (fmajor)
-				SetSuitUpdate("!HEV_DMG1", false, SUIT_NEXT_IN_30SEC);	// major laceration
-			else
-				SetSuitUpdate("!HEV_DMG0", false, SUIT_NEXT_IN_30SEC);	// minor laceration
+			//if (fmajor)
+			///	SetSuitUpdate("!HEV_DMG1", false, SUIT_NEXT_IN_30SEC);	// major laceration
+			///else
+			//	SetSuitUpdate("!HEV_DMG0", false, SUIT_NEXT_IN_30SEC);	// minor laceration
 
 			bitsDamage &= ~DMG_SLASH;
 			ffound = true;
@@ -1472,8 +1472,8 @@ int CBasePlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		
 		if (bitsDamage & DMG_SONIC)
 		{
-			if (fmajor)
-				SetSuitUpdate("!HEV_DMG2", false, SUIT_NEXT_IN_1MIN);	// internal bleeding
+			///if (fmajor)
+			//	SetSuitUpdate("!HEV_DMG2", false, SUIT_NEXT_IN_1MIN);	// internal bleeding
 			bitsDamage &= ~DMG_SONIC;
 			ffound = true;
 		}
@@ -1487,28 +1487,28 @@ int CBasePlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				m_rgbTimeBasedDamage[itbd_PoisonRecover] = 0;
 			}
 
-			SetSuitUpdate("!HEV_DMG3", false, SUIT_NEXT_IN_1MIN);	// blood toxins detected
+			//SetSuitUpdate("!HEV_DMG3", false, SUIT_NEXT_IN_1MIN);	// blood toxins detected
 			bitsDamage &= ~( DMG_POISON | DMG_PARALYZE );
 			ffound = true;
 		}
 
 		if (bitsDamage & DMG_ACID)
 		{
-			SetSuitUpdate("!HEV_DET1", false, SUIT_NEXT_IN_1MIN);	// hazardous chemicals detected
+			///SetSuitUpdate("!HEV_DET1", false, SUIT_NEXT_IN_1MIN);	// hazardous chemicals detected
 			bitsDamage &= ~DMG_ACID;
 			ffound = true;
 		}
 
 		if (bitsDamage & DMG_NERVEGAS)
 		{
-			SetSuitUpdate("!HEV_DET0", false, SUIT_NEXT_IN_1MIN);	// biohazard detected
+			//SetSuitUpdate("!HEV_DET0", false, SUIT_NEXT_IN_1MIN);	// biohazard detected
 			bitsDamage &= ~DMG_NERVEGAS;
 			ffound = true;
 		}
 
 		if (bitsDamage & DMG_RADIATION)
 		{
-			SetSuitUpdate("!HEV_DET2", false, SUIT_NEXT_IN_1MIN);	// radiation detected
+			//SetSuitUpdate("!HEV_DET2", false, SUIT_NEXT_IN_1MIN);	// radiation detected
 			bitsDamage &= ~DMG_RADIATION;
 			ffound = true;
 		}
@@ -1535,24 +1535,24 @@ int CBasePlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 	{
 		// first time we take major damage...
 		// turn automedic on if not on
-		SetSuitUpdate("!HEV_MED1", false, SUIT_NEXT_IN_30MIN);	// automedic on
+		///SetSuitUpdate("!HEV_MED1", false, SUIT_NEXT_IN_30MIN);	// automedic on
 
 		// give morphine shot if not given recently
-		SetSuitUpdate("!HEV_HEAL7", false, SUIT_NEXT_IN_30MIN);	// morphine shot
+		///SetSuitUpdate("!HEV_HEAL7", false, SUIT_NEXT_IN_30MIN);	// morphine shot
 	}
 	
 	if (fTookDamage && !ftrivial && fcritical && flHealthPrev < 75)
 	{
 
 		// already took major damage, now it's critical...
-		if (m_iHealth < 6)
-			SetSuitUpdate("!HEV_HLTH3", false, SUIT_NEXT_IN_10MIN);	// near death
-		else if (m_iHealth < 20)
-			SetSuitUpdate("!HEV_HLTH2", false, SUIT_NEXT_IN_10MIN);	// health critical
+	//	if (m_iHealth < 6)
+	//		SetSuitUpdate("!HEV_HLTH3", false, SUIT_NEXT_IN_10MIN);	// near death
+		//else if (m_iHealth < 20)
+		//	SetSuitUpdate("!HEV_HLTH2", false, SUIT_NEXT_IN_10MIN);	// health critical
 	
 		// give critical health warnings
-		if (!random->RandomInt(0,3) && flHealthPrev < 50)
-			SetSuitUpdate("!HEV_DMG7", false, SUIT_NEXT_IN_5MIN); //seek medical attention
+	//	if (!random->RandomInt(0,3) && flHealthPrev < 50)
+		//	SetSuitUpdate("!HEV_DMG7", false, SUIT_NEXT_IN_5MIN); //seek medical attention
 	}
 
 	// if we're taking time based damage, warn about its continuing effects
@@ -1560,11 +1560,11 @@ int CBasePlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		{
 			if (flHealthPrev < 50)
 			{
-				if (!random->RandomInt(0,3))
-					SetSuitUpdate("!HEV_DMG7", false, SUIT_NEXT_IN_5MIN); //seek medical attention
+				///if (!random->RandomInt(0,3))
+				///	SetSuitUpdate("!HEV_DMG7", false, SUIT_NEXT_IN_5MIN); //seek medical attention
 			}
-			else
-				SetSuitUpdate("!HEV_HLTH1", false, SUIT_NEXT_IN_10MIN);	// health dropping
+			//else
+				//SetSuitUpdate("!HEV_HLTH1", false, SUIT_NEXT_IN_10MIN);	// health dropping
 		}
 
 	// Do special explosion damage effect
@@ -5828,6 +5828,19 @@ bool CBasePlayer::GetInVehicle( IServerVehicle *pVehicle, int nRole )
 	return true;
 }
 
+//void CBasePlayer::IronSightCrosshair(void)
+///{
+//	if (IronSightEnabled)
+///	{
+//	}
+	//else
+	//{
+	//}
+//}
+
+
+
+
 
 //-----------------------------------------------------------------------------
 // Purpose: Remove this player from a vehicle
@@ -6702,6 +6715,14 @@ bool CBasePlayer::ClientCommand( const CCommand &args )
 				return true;
 			}
 		}
+	}
+	else if (stricmp(cmd, "toggle_ironsight") == 0)/////Added according to "developer.valvesoftware.com/wiki/Adding_Ironsights"
+	{
+		CBaseCombatWeapon *pWeapon = GetActiveWeapon();
+		if (pWeapon != NULL)
+			pWeapon->ToggleIronsights();
+
+		return true;
 	}
 	else
 #endif // _DEBUG

@@ -28,6 +28,10 @@ public:
 
 	void OnChangeActivity( Activity NewActivity );
 
+	void HeadcrabCapture(void);
+
+
+
 	bool IsFirmlyOnGround();
 	void MoveOrigin( const Vector &vecDelta );
 	void ThrowAt( const Vector &vecPos );

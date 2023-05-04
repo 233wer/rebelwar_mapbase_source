@@ -15,6 +15,8 @@
 #include "weapon_rpg.h"
 #include "hl2_player.h"
 #include "items.h"
+#include "npc_headcrab.h"
+
 
 
 #ifdef HL2MP
@@ -29,8 +31,9 @@
 #include "hl2_gamerules.h"
 #include "mapbase/GlobalStrings.h"
 #include "collisionutils.h"
-#endif
 
+#endif
+#include "ai_squadslot.h"
 #include "ai_squad.h"
 #include "ai_pathfinder.h"
 #include "ai_route.h"
@@ -73,8 +76,8 @@ ConVar	g_ai_citizen_show_enemy( "g_ai_citizen_show_enemy", "0" );
 ConVar	npc_citizen_insignia( "npc_citizen_insignia", "0" );
 ConVar	npc_citizen_squad_marker( "npc_citizen_squad_marker", "0" );
 ConVar	npc_citizen_explosive_resist( "npc_citizen_explosive_resist", "0" );
-ConVar	npc_citizen_auto_player_squad( "npc_citizen_auto_player_squad", "1" );
-ConVar	npc_citizen_auto_player_squad_allow_use( "npc_citizen_auto_player_squad_allow_use", "0" );
+ConVar	npc_citizen_auto_player_squad( "npc_citizen_auto_player_squad", "0" );
+ConVar	npc_citizen_auto_player_squad_allow_use( "npc_citizen_auto_player_squad_allow_use", "1" );
 #ifdef MAPBASE
 ConVar	npc_citizen_squad_secondary_toggle_use_button("npc_citizen_squad_toggle_use_button", "262144"); // IN_WALK by default
 ConVar	npc_citizen_squad_secondary_toggle_use_always( "npc_citizen_squad_secondary_toggle_use_always", "0", FCVAR_NONE, "Allows all citizens not strictly stuck to the player's squad to be toggled via Alt + E." );
@@ -121,6 +124,7 @@ ConVar npc_citizen_nocollide_player( "npc_citizen_nocollide_player", "0" );
 
 enum SquadSlot_T
 {
+
 	SQUAD_SLOT_CITIZEN_RPG1	= LAST_SHARED_SQUADSLOT,
 	SQUAD_SLOT_CITIZEN_RPG2,
 };
@@ -248,6 +252,8 @@ public:
 private:
 	bool m_bNotInTransition; // does not need to be saved. If this is ever not default, the object is not being saved.
 	static int gm_nCommandPoints;
+	
+	int m_capturedby_headcrab = 0;
 };
 
 int CCommandPoint::gm_nCommandPoints;
@@ -533,6 +539,11 @@ void CNPC_Citizen::PrecacheAllOfType( CitizenType_t type )
 //-----------------------------------------------------------------------------
 void CNPC_Citizen::Spawn()
 {
+	
+	CapabilitiesAdd(bits_CAP_SQUAD);
+	CapabilitiesAdd(bits_CAP_NO_HIT_SQUADMATES);
+	CapabilitiesAdd(bits_CAP_NO_HIT_PLAYER);
+	
 	BaseClass::Spawn();
 
 #ifdef _XBOX
@@ -1803,14 +1814,14 @@ void CNPC_Citizen::StartTask( const Task_t *pTask )
 #ifdef MAPBASE
 			SetSpeechTarget( GetTarget() );
 #endif
-			Speak( TLK_HEAL );
+			//Speak( TLK_HEAL );
 		}
 		else if ( IsAmmoResupplier() )
 		{
 #ifdef MAPBASE
 			SetSpeechTarget( GetTarget() );
 #endif
-			Speak( TLK_GIVEAMMO );
+			//Speak( TLK_GIVEAMMO );
 		}
 		SetIdealActivity( (Activity)ACT_CIT_HEAL );
 		break;
@@ -2605,7 +2616,7 @@ bool CNPC_Citizen::IsCommandable()
 //-----------------------------------------------------------------------------
 bool CNPC_Citizen::IsPlayerAlly( CBasePlayer *pPlayer )											
 { 
-	if ( Classify() == CLASS_CITIZEN_PASSIVE && GlobalEntity_GetState("gordon_precriminal") == GLOBAL_ON )
+	if (Classify() == CLASS_CITIZEN_PASSIVE && GlobalEntity_GetState("gordon_precriminal") == GLOBAL_ON)
 	{
 		// Robin: Citizens use friendly speech semaphore in trainstation
 		return true;
@@ -3041,7 +3052,7 @@ void CNPC_Citizen::CommanderUse( CBaseEntity *pActivator, CBaseEntity *pCaller, 
 	if ( pActivator == UTIL_GetLocalPlayer() )
 	{
 		// Don't say hi after you've been addressed by the player
-		SetSpokeConcept( TLK_HELLO, NULL );	
+		//SetSpokeConcept( TLK_HELLO, NULL );	
 
 #ifdef MAPBASE
 		if ( ShouldAllowSquadToggleUse(UTIL_GetLocalPlayer()) || npc_citizen_auto_player_squad_allow_use.GetBool() )
@@ -3054,16 +3065,16 @@ void CNPC_Citizen::CommanderUse( CBaseEntity *pActivator, CBaseEntity *pCaller, 
 
 				if ( HaveCommandGoal() )
 				{
-					SpeakCommandResponse( TLK_COMMANDED, szSquadUseModifier );
+					//SpeakCommandResponse( TLK_COMMANDED, szSquadUseModifier );
 				}
 				else if ( m_FollowBehavior.GetFollowTarget() == UTIL_GetLocalPlayer() )
 				{
-					SpeakCommandResponse( TLK_STARTFOLLOW, szSquadUseModifier );
+					//SpeakCommandResponse( TLK_STARTFOLLOW, szSquadUseModifier );
 				}
 			}
 			else
 			{
-				SpeakCommandResponse( TLK_STOPFOLLOW, szSquadUseModifier );
+				//SpeakCommandResponse( TLK_STOPFOLLOW, szSquadUseModifier );
 				RemoveFromPlayerSquad();
 			}
 		}
@@ -4341,7 +4352,7 @@ void CNPC_Citizen::InputSetAmmoResupplierOff( inputdata_t &inputdata )
 //------------------------------------------------------------------------------
 void CNPC_Citizen::InputSpeakIdleResponse( inputdata_t &inputdata )
 {
-	SpeakIfAllowed( TLK_ANSWER, NULL, true );
+	//SpeakIfAllowed( TLK_ANSWER, NULL, true );
 }
 
 #ifdef MAPBASE
@@ -4642,6 +4653,7 @@ void CCitizenResponseSystem::Spawn()
 		return;
 	}
 	g_pCitizenResponseSystem = this;
+
 
 	// Invisible, non solid.
 	AddSolidFlags( FSOLID_NOT_SOLID );

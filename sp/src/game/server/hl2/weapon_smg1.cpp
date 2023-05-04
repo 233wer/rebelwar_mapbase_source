@@ -53,8 +53,23 @@ public:
 
 	virtual const Vector& GetBulletSpread( void )
 	{
-		static const Vector cone = VECTOR_CONE_5DEGREES;
-		return cone;
+		// Handle NPCs first
+		static Vector npcCone = VECTOR_CONE_5DEGREES;
+		if (GetOwner() && GetOwner()->IsNPC())
+			return npcCone;
+		
+		static Vector cone;
+
+		if (m_bIsIronsighted)
+		{
+			static const Vector cone = VECTOR_CONE_1DEGREES;
+			return cone;
+		}
+		else
+		{
+			static const Vector cone = VECTOR_CONE_5DEGREES;
+			return cone;
+		}
 	}
 
 	const WeaponProficiencyInfo_t *GetProficiencyValues();
@@ -69,6 +84,7 @@ protected:
 
 	Vector	m_vecTossVelocity;
 	float	m_flNextGrenadeCheck;
+	const char* text;
 };
 
 IMPLEMENT_SERVERCLASS_ST(CWeaponSMG1, DT_WeaponSMG1)
@@ -81,6 +97,7 @@ BEGIN_DATADESC( CWeaponSMG1 )
 
 	DEFINE_FIELD( m_vecTossVelocity, FIELD_VECTOR ),
 	DEFINE_FIELD( m_flNextGrenadeCheck, FIELD_TIME ),
+	DEFINE_FIELD( text, FIELD_CHARACTER ),
 
 END_DATADESC()
 
@@ -188,6 +205,7 @@ CWeaponSMG1::CWeaponSMG1( )
 	m_fMaxRange1		= 1400;
 
 	m_bAltFiresUnderwater = false;
+	text = "NULL";
 }
 
 //-----------------------------------------------------------------------------
@@ -205,6 +223,8 @@ void CWeaponSMG1::Precache( void )
 //-----------------------------------------------------------------------------
 void CWeaponSMG1::Equip( CBaseCombatCharacter *pOwner )
 {
+
+	
 	if( pOwner->Classify() == CLASS_PLAYER_ALLY )
 	{
 		m_fMaxRange1 = 3000;
@@ -327,6 +347,11 @@ void CWeaponSMG1::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChar
 			npc->FireNamedOutput("OnThrowGrenade", var, pGrenade, npc);
 		}
 		break;
+		if (GetOwner() && GetOwner()->IsPlayer())
+		///{
+		//	ConVar *pironsight = cvar->FindVar("IronSight");
+		///	pironsight->SetValue("1");
+		//}
 #else
 		/*//FIXME: Re-enable
 		case EVENT_WEAPON_AR2_GRENADE:
@@ -354,6 +379,7 @@ void CWeaponSMG1::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChar
 		}
 		break;
 		*/
+		
 #endif
 
 	default:
@@ -396,6 +422,9 @@ bool CWeaponSMG1::Reload( void )
 		m_flNextSecondaryAttack = GetOwner()->m_flNextAttack = fCacheTime;
 
 		WeaponSound( RELOAD );
+
+		
+
 	}
 
 	return fRet;
@@ -489,6 +518,26 @@ void CWeaponSMG1::SecondaryAttack( void )
 
 	m_iSecondaryAttacks++;
 	gamestats->Event_WeaponFired( pPlayer, false, GetClassname() );
+
+//Modding Notes 2023/4/17 (For Visual Studio 2013)
+//
+//If you want make the code work,You need to change the client and server`s dlls public to the mod(which you debug)`s bin direction
+//That means you must change PROJECT--Properties--Build Events--Post-Build Event
+//if you work for hl2,only change for Client(HL2) and Server(HL2)
+//work for episodic,just change for Client(Episodic) and Server(Episodic)
+//
+
+
+
+//#ifdef _DEBUG                         //It`s for checking the code if is functional,Not Actually work in last code.Comment this on 2023/4/17
+	//text = "This is a Test MSg for SMG Alt-fire";
+	//int i = random->RandomInt(1, 50);
+	//float f = random->RandomFloat(0, 2); 
+	//Msg("%s using %i shells at %.2f feet per second\n", text, i , f);
+
+//#endif
+
+
 }
 
 #define	COMBINE_MIN_GRENADE_CLEAR_DIST 256
@@ -615,3 +664,4 @@ const WeaponProficiencyInfo_t *CWeaponSMG1::GetProficiencyValues()
 
 	return proficiencyTable;
 }
+

@@ -1,4 +1,4 @@
-//====== Copyright © 1996-2004, Valve Corporation, All rights reserved. =======
+//
 //
 // Purpose: Depth of field controller entity
 //

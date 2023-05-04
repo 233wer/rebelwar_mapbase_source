@@ -10,6 +10,8 @@
 #include "shake.h"
 #include "engine/IEngineSound.h"
 
+
+
 #if !defined( CLIENT_DLL )
 
 #include "soundent.h"
@@ -25,6 +27,9 @@ extern short	g_sModelIndexFireball;		// (in combatweapon.cpp) holds the index fo
 extern short	g_sModelIndexWExplosion;	// (in combatweapon.cpp) holds the index for the underwater explosion
 extern short	g_sModelIndexSmoke;			// (in combatweapon.cpp) holds the index for the smoke cloud
 extern ConVar    sk_plr_dmg_grenade;
+
+extern int m_normalgrenade_in;
+int m_normalgrenade_in = 0;
 
 #if !defined( CLIENT_DLL )
 
@@ -366,6 +371,11 @@ void CBaseGrenade::Detonate( void )
 	{
 		UTIL_ScreenShake( GetAbsOrigin(), GetShakeAmplitude(), 150.0, 1.0, GetShakeRadius(), SHAKE_START );
 	}
+	
+	//m_normalgrenade_in = 0;//have no normal grenade
+	//normalgrenade_detonated = 1;//grenade had been detonated
+
+	
 }
 
 
