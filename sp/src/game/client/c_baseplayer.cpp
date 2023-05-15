@@ -523,7 +523,7 @@ void C_BasePlayer::Spawn( void )
 
 	m_iFOV	= 0;	// init field of view.
 
-    SetModel( "models/player.mdl" );
+    SetModel( "models/humans/group03/male_09.mdl" );
 
 	Precache();
 

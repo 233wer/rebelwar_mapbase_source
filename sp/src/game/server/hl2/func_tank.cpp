@@ -59,6 +59,10 @@ extern ConVar ai_debug_shoot_positions;
 
 ConVar mortar_visualize("mortar_visualize", "0" );
 
+#define NUM_PENETRATIONS	3
+
+
+
 BEGIN_DATADESC( CFuncTank )
 	DEFINE_KEYFIELD( m_yawRate, FIELD_FLOAT, "yawrate" ),
 	DEFINE_KEYFIELD( m_yawRange, FIELD_FLOAT, "yawrange" ),
@@ -5364,4 +5368,1333 @@ void CFuncTankLogic::Fire(int bulletCount, const Vector &barrelEnd, const Vector
 	m_OnFire_FirstEnt.Set(tr.m_pEnt, tr.m_pEnt, this);
 }
 #endif // MAPBASE
+
+
+//
+//
+////=========================================================
+////=========================================================
+//class CTankSniperBullet : public CBaseEntity
+//{
+//public:
+//	DECLARE_CLASS(CTankSniperBullet, CBaseEntity);
+//
+//	CTankSniperBullet(void) { Init(); }
+//
+//	Vector	m_vecDir;
+//
+//	Vector		m_vecStart;
+//	Vector		m_vecEnd;
+//
+//	float	m_flLastThink;
+//	float	m_SoundTime;
+//	int		m_AmmoType;
+//	int		m_PenetratedAmmoType;
+//	float	m_Speed;
+//	bool	m_bDirectShot;
+//
+//	void Precache(void);
+//	bool IsActive(void) { return m_fActive; }
+//
+//	bool Start(const Vector &vecOrigin, const Vector &vecTarget, CBaseEntity *pOwner, bool bDirectShot);
+//	void Stop(void);
+//
+//	void BulletThink(void);
+//
+//	void Init(void);
+//
+//	DECLARE_DATADESC();
+//
+//private:
+//
+//	// Only one shot per sniper at a time. If a bullet hasn't
+//	// hit, the shooter must wait.
+//	bool	m_fActive;
+//
+//	// This tracks how many times this single bullet has 
+//	// struck. This is for penetration, so the bullet can
+//	// go through things.
+//	int		m_iImpacts;
+//};
+//
+//
+//
+//BEGIN_DATADESC(CTankSniperBullet)
+//
+//DEFINE_FIELD(m_SoundTime, FIELD_TIME),
+//DEFINE_FIELD(m_AmmoType, FIELD_INTEGER),
+//DEFINE_FIELD(m_PenetratedAmmoType, FIELD_INTEGER),
+//DEFINE_FIELD(m_fActive, FIELD_BOOLEAN),
+//DEFINE_FIELD(m_iImpacts, FIELD_INTEGER),
+//DEFINE_FIELD(m_vecOrigin, FIELD_VECTOR),
+//DEFINE_FIELD(m_vecDir, FIELD_VECTOR),
+//DEFINE_FIELD(m_flLastThink, FIELD_TIME),
+//DEFINE_FIELD(m_Speed, FIELD_FLOAT),
+//DEFINE_FIELD(m_bDirectShot, FIELD_BOOLEAN),
+//
+//DEFINE_FIELD(m_vecStart, FIELD_VECTOR),
+//DEFINE_FIELD(m_vecEnd, FIELD_VECTOR),
+//
+//DEFINE_THINKFUNC(BulletThink),
+//
+//END_DATADESC()
+//
+//
+//LINK_ENTITY_TO_CLASS(func_tanksniperbullet, CTankSniperBullet);
+//
+//void  CTankSniperBullet::Precache()
+//{
+//}
+//
+//
+////---------------------------------------------------------
+////---------------------------------------------------------
+//void  CTankSniperBullet::BulletThink(void)
+//{
+//	// Set the bullet up to think again.
+//	SetNextThink(gpGlobals->curtime + 0.05);
+//
+//	///if (!GetOwnerEntity())
+//	//{
+//		// Owner died!
+//	///	Stop();
+//	///	return;
+//	//}
+//
+//	if (gpGlobals->curtime >= m_SoundTime)
+//	{
+//		// See if it's time to make the sonic boom.
+//		CPASAttenuationFilter filter(this, ATTN_NONE);
+//		EmitSound(filter, entindex(), "NPC_Sniper.SonicBoom");
+//
+//		///if (GetOwnerEntity())
+//		///{
+//			//CAI_BaseNPC *pSniper;
+//			///CAI_BaseNPC *pEnemyNPC;
+//			///pSniper = GetOwnerEntity()->MyNPCPointer();
+//
+//			//if (pSniper && pSniper->GetEnemy())
+//			//{
+//			///	pEnemyNPC = pSniper->GetEnemy()->MyNPCPointer();
+//
+//				// Warn my enemy if they can see the sniper.
+//			///	if (pEnemyNPC && GetOwnerEntity() && pEnemyNPC->FVisible(GetOwnerEntity()->WorldSpaceCenter()))
+//			//	{
+//			///		CSoundEnt::InsertSound(SOUND_DANGER | SOUND_CONTEXT_FROM_SNIPER, pSniper->GetEnemy()->EarPosition(), 16, 1.0f, GetOwnerEntity());
+//			////	}
+//		//	}
+//	////	}///
+//
+//		// No way the bullet will live this long.
+//		m_SoundTime = 1e9;
+//	}
+//
+//	// Trace this timeslice of the bullet.
+//	Vector vecStart;
+//	Vector vecEnd;
+//	float flInterval;
+//
+//	flInterval = gpGlobals->curtime - GetLastThink();
+//	vecStart = GetAbsOrigin();
+//	vecEnd = vecStart + (m_vecDir * (m_Speed * flInterval));
+//	float flDist = (vecStart - vecEnd).Length();
+//
+//	//Msg(".");
+//
+//	trace_t tr;
+//	AI_TraceLine(vecStart, vecEnd, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
+//
+//	if (tr.fraction != 1.0)
+//	{
+//		// This slice of bullet will hit something.
+//		GetOwnerEntity()->FireBullets(1, vecStart, m_vecDir, vec3_origin, flDist, m_AmmoType, 0);
+//		m_iImpacts++;
+//
+//#ifdef HL2_EPISODIC
+//		if (tr.m_pEnt->IsNPC() || m_iImpacts == NUM_PENETRATIONS)
+//#else	 
+//		if (tr.m_pEnt->m_takedamage == DAMAGE_YES || m_iImpacts == NUM_PENETRATIONS)
+//#endif//HL2_EPISODIC
+//		{
+//			// Bullet stops when it hits an NPC, or when it has penetrated enough times.
+//
+//			if (tr.m_pEnt && tr.m_pEnt->VPhysicsGetObject())
+//			{
+//				if (tr.m_pEnt->VPhysicsGetObject()->GetGameFlags() & FVPHYSICS_PLAYER_HELD)
+//				{
+//					Pickup_ForcePlayerToDropThisObject(tr.m_pEnt);
+//				}
+//			}
+//
+//			Stop();
+//			return;
+//		}
+//		else
+//		{
+//#define STEP_SIZE	2
+//#define NUM_STEPS	6
+//			// Try to slide a 'cursor' through the object that was hit. 
+//			Vector vecCursor = tr.endpos;
+//
+//			for (int i = 0; i < NUM_STEPS; i++)
+//			{
+//				//Msg("-");
+//				vecCursor += m_vecDir * STEP_SIZE;
+//
+//				if (UTIL_PointContents(vecCursor) != CONTENTS_SOLID)
+//				{
+//					// Passed out of a solid! 
+//					SetAbsOrigin(vecCursor);
+//
+//					// Fire another tracer.
+//					AI_TraceLine(vecCursor, vecCursor + m_vecDir * 8192, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
+//					UTIL_Tracer(vecCursor, tr.endpos, 0, TRACER_DONT_USE_ATTACHMENT, m_Speed, true, "StriderTracer");
+//					return;
+//				}
+//			}
+//
+//			// Bullet also stops when it fails to exit material after penetrating this far.
+//			//Msg("#\n");
+//
+//
+//			Stop();
+//			return;
+//		}
+//	}
+//	else
+//	{
+//		SetAbsOrigin(vecEnd);
+//	}
+//}
+//
+//
+////=========================================================
+////=========================================================
+//bool  CTankSniperBullet::Start(const Vector &vecOrigin, const Vector &vecTarget, CBaseEntity *pOwner, bool bDirectShot)
+//{
+//	m_flLastThink = gpGlobals->curtime;
+//
+//	if (m_AmmoType == -1)
+//	{
+//		// This guy doesn't have a REAL weapon, per say, but he does fire
+//		// sniper rounds. Since there's no weapon to index the ammo type,
+//		// do it manually here.
+//		m_AmmoType = GetAmmoDef()->Index("SniperRound");
+//
+//		// This is the bullet that is used for all subsequent FireBullets() calls after the first
+//		// call penetrates a surface and keeps going.
+//		m_PenetratedAmmoType = GetAmmoDef()->Index("SniperPenetratedRound");
+//	}
+//
+//	if (m_fActive)
+//	{
+//		return false;
+//	}
+//
+//	SetOwnerEntity(pOwner);
+//
+//	UTIL_SetOrigin(this, vecOrigin);
+//
+//	m_vecDir = vecTarget - vecOrigin;
+//	VectorNormalize(m_vecDir);
+//
+//
+//
+//	// Start the tracer here, and tell it to end at the end of the last trace
+//	// the trace comes from the loop above that does penetration.
+//	trace_t tr;
+//	UTIL_TraceLine(GetAbsOrigin(), GetAbsOrigin() + m_vecDir * 8192, MASK_SOLID_BRUSHONLY, this, COLLISION_GROUP_NONE, &tr);
+//	UTIL_Tracer(vecOrigin, tr.endpos, 0, TRACER_DONT_USE_ATTACHMENT, m_Speed, true, "StriderTracer");
+//
+//	float flElapsedTime = ((tr.startpos - tr.endpos).Length() / m_Speed);
+//	m_SoundTime = gpGlobals->curtime + flElapsedTime * 0.5;
+//
+//	SetThink(&CTankSniperBullet::BulletThink);
+//	SetNextThink(gpGlobals->curtime);
+//	m_fActive = true;
+//	m_bDirectShot = bDirectShot;
+//	return true;
+//
+//	/*
+//	int i;
+//
+//	// Try to find all of the things the bullet can go through along the way.
+//	//-------------------------------
+//	//-------------------------------
+//	m_vecDir = vecTarget - vecOrigin;
+//	VectorNormalize( m_vecDir );
+//
+//	trace_t	tr;
+//
+//
+//	// Elapsed time counts how long the bullet is in motion through this simulation.
+//	float flElapsedTime = 0;
+//
+//	for( i = 0 ; i < NUM_PENETRATIONS ; i++ )
+//	{
+//	// Trace to the target.
+//	UTIL_TraceLine( GetAbsOrigin(), vecTarget, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
+//
+//	flShotDist = (tr.endpos - GetAbsOrigin()).Length();
+//
+//	// Record the two endpoints of the segment and the time at which this bullet hits,
+//	// and the time at which it's supposed to hit its mark.
+//	m_ImpactTime[ i ] = flElapsedTime + ( flShotDist / GetBulletSpeed() );
+//	m_vecStart[ i ] = tr.startpos;
+//	m_vecEnd[ i ] = tr.endpos;
+//
+//	// The elapsed time is now pushed forward by how long it takes the bullet
+//	// to travel through this segment.
+//	flElapsedTime += ( flShotDist / GetBulletSpeed() );
+//
+//	// Never let gpGlobals->curtime get added to the elapsed time!
+//	m_ImpactTime[ i ] += gpGlobals->curtime;
+//
+//	CBaseEntity *pEnt;
+//
+//	pEnt = tr.m_pEnt;
+//
+//	if( !pEnt												||
+//	pEnt->MyNPCPointer()								||
+//	UTIL_DistApprox2D( tr.endpos, vecTarget ) <= 4		||
+//	FClassnameIs( pEnt, "prop_physics" ) )
+//	{
+//	// If we're close to the target, assume the shot is going to hit
+//	// the target and stop penetrating.
+//	//
+//	// If we're going to hit an NPC, stop penetrating.
+//	//
+//	// If we hit a physics prop, stop penetrating.
+//	//
+//	// Otherwise, keep looping.
+//	break;
+//	}
+//
+//	// We're going to try to penetrate whatever the bullet has hit.
+//
+//	// Push through the object by the penetration distance, then trace back.
+//	Vector vecCursor;
+//
+//	vecCursor = tr.endpos;
+//	vecCursor += m_vecDir * PENETRATION_THICKNESS;
+//
+//	UTIL_TraceLine( vecCursor, vecCursor + m_vecDir * -2, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
+//
+//	#if 1
+//	if( tr.startsolid )
+//	{
+//	// The cursor is inside the solid. Solid is too thick to penetrate.
+//	#ifdef SNIPER_DEBUG
+//	Msg( "SNIPER STARTSOLID\n" );
+//	#endif
+//	break;
+//	}
+//	#endif
+//
+//	// Now put the bullet at this point and continue.
+//	UTIL_SetOrigin( this, vecCursor );
+//	}
+//	//-------------------------------
+//	//-------------------------------
+//	*/
+//
+//
+//	/*
+//	#ifdef SNIPER_DEBUG
+//	Msg( "PENETRATING %d items", i );
+//	#endif // SNIPER_DEBUG
+//
+//	#ifdef SNIPER_DEBUG
+//	Msg( "Dist: %f Travel Time: %f\n", flShotDist, m_ImpactTime );
+//	#endif // SNIPER_DEBUG
+//	*/
+//}
+//
+//
+////---------------------------------------------------------
+////---------------------------------------------------------
+//void  CTankSniperBullet::Init(void)
+//{
+//#ifdef SNIPER_DEBUG
+//	Msg("Bullet stopped\n");
+//#endif // SNIPER_DEBUG
+//
+//	m_fActive = false;
+//	m_vecDir.Init();
+//	m_AmmoType = -1;
+//	m_SoundTime = 1e9;
+//	m_iImpacts = 0;
+//}
+//
+//
+////---------------------------------------------------------
+////---------------------------------------------------------
+//void  CTankSniperBullet::Stop(void)
+//{
+//	// The bullet doesn't retire immediately because it still has a sound
+//	// in the world that is relying on the bullet's position as a react origin.
+//	// So stick around for another second or so.
+//	SetThink(&CBaseEntity::SUB_Remove);
+//	SetNextThink(gpGlobals->curtime + 1.0);
+//}
+
+
+
+
+
+
+
+
+
+
+//////////////////////FUNC_TANKSNIPER
+
+#ifdef MAPBASE
+
+class CFuncTankSniper : public CFuncTank //a fixed sniper rifle that can be used by combat npcs,similar to the sniper rifles that appears in some custom maps
+{
+public:
+	DECLARE_CLASS(CFuncTankSniper, CFuncTank);
+	DECLARE_DATADESC();
+
+	//CFuncTankSniper();
+	
+	void Fire(int bulletCount, const Vector &barrelEnd, const Vector &forward, CBaseEntity *pAttacker, bool bIgnoreSpread);
+	virtual const char *GetTracerType(void);
+	//virtual void OnStartControlled();
+	void Precache(void);
+  // void Spawn();
+	//void ControllerPostFrame();
+//protected:
+
+
+	
+private:
+	bool m_bIsnoReloading;
+	//char	m_iszOverlayNames[MAX_SCREEN_OVERLAYS][255];
+	bool timer_no_set;
+	bool aimtimer_noset;
+	bool m_bReadyToFire;
+	bool ammo_shot;
+	CBeam						*m_pBeam;
+	Vector TargetPos;
+	Vector m_vecPaintCursor;
+	float						m_flDecoyRadius;
+	EHANDLE						m_hDecoyObject;
+	bool						m_bWarnedTargetEntity;
+	Vector						m_vecDecoyObjectTarget;
+	string_t					m_iszBeamName;	// Custom beam texture
+	color32						m_BeamColor;	// Custom beam color
+	short sFlashSprite;
+	short sHaloSprite;
+	void SpawnScopeLayer();
+
+	void LaserOff(void);
+	int m_direct_shot;
+	bool bDirectShot;
+	float m_Speed = 5000;
+	void AimTargetThink(void);
+	void Think(void);
+	void LaserOn(void);
+
+
+	float ReloadTime = 1;
+	float m_aimtimer;
+	float AimTime = 4;
+	int ammocount = 1;
+	int realammocount = 1;
+	float m_reloadtimer;
+	//bool aimedtarget = false;
+
+	int startreload = 0;
+	void ShotObject(void);
+
+	//THINKFUNCS
+	void ReloadAmmoDelayThink();//more like a colddown
+
+	void ToggleZoom(void);
+	void DisableZoom(void);
+	bool				m_bInZoom;
+};
+
+LINK_ENTITY_TO_CLASS(func_tanksniper, CFuncTankSniper);
+
+
+BEGIN_DATADESC(CFuncTankSniper)
+
+DEFINE_FIELD(m_bIsnoReloading, FIELD_BOOLEAN),
+
+
+DEFINE_THINKFUNC(Think),
+
+
+//DEFINE_THINKFUNC(CheckAmmoLoad),
+// Register new think function
+
+END_DATADESC()
+
+void CFuncTankSniper::Precache()
+{
+
+
+
+
+
+
+
+#ifdef MAPBASE
+	//if (realammocount != 0)
+	///{
+	///	ammocount = realammocount;
+	//}
+	// Should we bother to make these customizable? These are static, too.
+
+	m_bIsnoReloading = true;
+	timer_no_set = true;
+	aimtimer_noset = true;
+	m_bReadyToFire = true;
+	ammo_shot = false;
+
+	sHaloSprite = PrecacheModel("sprites/light_glow03.vmt");
+	sFlashSprite = PrecacheModel("sprites/muzzleflash1.vmt");
+
+	if (m_iszBeamName == NULL_STRING)
+	{
+		m_iszBeamName = AllocPooledString("effects/bluelaser1.vmt");
+		m_BeamColor.r = 0;
+		m_BeamColor.g = 100;
+		m_BeamColor.b = 255;
+	}
+	else if (Q_GetFileExtension(STRING(m_iszBeamName)) == NULL)
+	{
+		// The path doesn't have a .vmt. Fix this or we crash!
+		// 
+		// I know I warn against using .vmt even though this code ultimately ensures there is no consequence other than a warning,
+		// but it's bad practice and remember: That old string without the .vmt would likely be floating around somewhere doing nothing.
+		Warning("%s beam name \"%s\" lacks .vmt!\n", GetDebugName(), STRING(m_iszBeamName));
+		m_iszBeamName = AllocPooledString(UTIL_VarArgs("%s.vmt", STRING(m_iszBeamName)));
+	}
+
+	PrecacheModel(STRING(m_iszBeamName));
+#else
+
+	sHaloSprite = PrecacheModel("sprites/light_glow03.vmt");
+	sFlashSprite = PrecacheModel("sprites/muzzleflash1.vmt");
+	PrecacheModel("effects/bluelaser1.vmt");
+#endif
+
+	//UTIL_PrecacheOther("func_tanksniperbullet");
+
+	PrecacheScriptSound("NPC_Sniper.Die");
+	PrecacheScriptSound("NPC_Sniper.TargetDestroyed");
+	PrecacheScriptSound("NPC_Sniper.HearDanger");
+	PrecacheScriptSound("NPC_Sniper.FireBullet");
+	PrecacheScriptSound("NPC_Sniper.Reload");
+	PrecacheScriptSound("NPC_Sniper.SonicBoom");
+
+	BaseClass::Precache();
+
+
+}
+
+
+
+
+//void CFuncTankSniper::Spawn()
+//{//
+	//BaseClass::Spawn();
+	//SetThink(&CFuncTankSniper::AimTargetThink);
+	//SetNextThink(gpGlobals->curtime);
+//}
+
+
+void CFuncTankSniper::Fire(int bulletCount, const Vector &barrelEnd, const Vector &forward, CBaseEntity *pAttacker, bool bIgnoreSpread)
+{
+	if (ammocount >= 1 && IsPlayerManned())
+	{ 
+		//Vector m_vecTrueForward;
+		//GetVectors(&m_vecTrueForward, NULL, NULL);
+		Vector TargetPos;
+		Msg("Player shot the ammo\n");
+		ammocount--;
+		ammo_shot = true;
+
+		trace_t tr;
+		//	CBasePlayer *pPlayer = AI_GetSinglePlayer();
+		//Vector vecToPlayer = pPlayer->WorldSpaceCenter() - GetAbsOrigin();
+		///vecToPlayer.NormalizeInPlace();
+
+
+
+		//bool bHarass = false;
+		//float flDot = DotProduct(m_vecTrueForward, vecToPlayer);
+		TargetPos = GetAbsOrigin() + forward * 1900.0f;
+		//Vector vecBarrelEnd = WorldBarrelPosition();
+		AI_TraceLine(barrelEnd, TargetPos, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
+		//UTIL_Tracer(barrelEnd, tr.endpos, 0, TRACER_DONT_USE_ATTACHMENT, m_Speed, true, "StriderTracer");
+		UTIL_Tracer(barrelEnd, TargetPos, 0, TRACER_DONT_USE_ATTACHMENT, m_Speed, true, "StriderTracer");
+		//UTIL_DecalTrace(&tr, "Scorch");
+		///CBaseEntity *pBullet;
+		///pBullet = (CBaseEntity *)Create("sniperbullet", barrelEnd, GetAbsAngles(), NULL);
+
+		CAmmoDef *pAmmoDef = GetAmmoDef();
+		int ammoType = pAmmoDef->Index("TankSniperRound");
+
+		if (tr.DidHit())
+		{
+			tr.m_pEnt->ClearEffects();
+		}
+
+		FireBulletsInfo_t info;
+		info.m_vecSrc = barrelEnd;
+		info.m_vecDirShooting = forward;
+		info.m_flDistance = 5000;
+		info.m_iAmmoType = ammoType;
+
+		//info.m_iTracerFreq = 1;
+		///info.m_pAttacker = pAttacker;
+		///info.m_pAdditionalIgnoreEnt = GetParent();
+		//info.m_pAttacker = pAttacker;
+		//CSoundEnt::InsertSound(SOUND_DANGER | SOUND_CONTEXT_FROM_SNIPER, barrelEnd + forward * 32.0f, 32.0f, 0.2f, pAttacker, SOUNDENT_CHANNEL_WEAPON);
+
+		FireBullets(info);
+		//UTIL_SetOrigin(this, barrelEnd);
+		CPASAttenuationFilter filter(this);
+		EmitSound(filter, entindex(), "NPC_Sniper.FireBullet");
+		CPVSFilter filter_spirite(barrelEnd);
+		te->Sprite(filter_spirite, 0.0, &barrelEnd, sFlashSprite, 0.3, 255);
+		//EmitSound(filter, entindex(), "NPC_Sniper.Reload");
+		
+		ReloadAmmoDelayThink();
+	    
+		
+
+
+
+
+		//BaseClass::Fire(bulletCount, barrelEnd, forward, pAttacker, bIgnoreSpread);
+		
+		
+	}
+	
+
+
+	if (ammocount >= 1 && IsNPCManned())
+	{
+		
+		if (m_bReadyToFire)
+		{
+			//Vector m_vecTrueForward;
+			//GetVectors(&m_vecTrueForward, NULL, NULL);
+			
+			Msg("NPC shot the ammo\n");
+			ammocount--;
+			ammo_shot = true;
+			m_bReadyToFire = false;
+			trace_t tr;
+			//	CBasePlayer *pPlayer = AI_GetSinglePlayer();
+			//Vector vecToPlayer = pPlayer->WorldSpaceCenter() - GetAbsOrigin();
+			///vecToPlayer.NormalizeInPlace();
+
+
+
+			//bool bHarass = false;
+			//float flDot = DotProduct(m_vecTrueForward, vecToPlayer);
+			TargetPos = GetAbsOrigin() + forward * 1900.0f;
+			//Vector vecBarrelEnd = WorldBarrelPosition();
+			AI_TraceLine(barrelEnd, TargetPos, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
+			//UTIL_Tracer(barrelEnd, tr.endpos, 0, TRACER_DONT_USE_ATTACHMENT, m_Speed, true, "StriderTracer");
+			UTIL_Tracer(barrelEnd, TargetPos, 0, TRACER_DONT_USE_ATTACHMENT, m_Speed, true, "StriderTracer");
+			//UTIL_DecalTrace(&tr, "Scorch");
+			///CBaseEntity *pBullet;
+			///pBullet = (CBaseEntity *)Create("sniperbullet", barrelEnd, GetAbsAngles(), NULL);
+
+
+			//if (tr.DidHit())
+			//{
+			//	tr.m_pEnt->ClearEffects();
+			//}
+
+			if (tr.m_pEnt && tr.m_pEnt->VPhysicsGetObject())
+			{
+				if (tr.m_pEnt->VPhysicsGetObject()->GetGameFlags() & FVPHYSICS_PLAYER_HELD)
+				{
+					Pickup_ForcePlayerToDropThisObject(tr.m_pEnt);
+				}
+			}
+
+
+			CAmmoDef *pAmmoDef = GetAmmoDef();
+			int ammoType = pAmmoDef->Index("TankSniperRound");
+
+			FireBulletsInfo_t info;
+			info.m_vecSrc = barrelEnd;
+			info.m_vecDirShooting = forward;
+			info.m_flDistance = 4096;
+			info.m_iAmmoType = ammoType;
+			
+			//info.m_iTracerFreq = 1;
+			///info.m_pAttacker = pAttacker;
+			///info.m_pAdditionalIgnoreEnt = GetParent();
+		//	info.m_pAttacker = pAttacker;
+			//CSoundEnt::InsertSound(SOUND_DANGER | SOUND_CONTEXT_FROM_SNIPER, barrelEnd + forward * 32.0f, 32.0f, 0.2f, pAttacker, SOUNDENT_CHANNEL_WEAPON);
+
+
+
+			FireBullets(info);
+			//UTIL_SetOrigin(this, barrelEnd);
+			CPASAttenuationFilter filter(this);
+			EmitSound(filter, entindex(), "NPC_Sniper.FireBullet");
+			//EmitSound(filter, entindex(), "NPC_Sniper.Reload");
+			CPVSFilter filter_spirite(barrelEnd);
+			te->Sprite(filter_spirite, 0.0, &barrelEnd, sFlashSprite, 0.3, 255);
+			ReloadAmmoDelayThink();
+
+
+		
+
+
+
+		}
+
+
+
+		//BaseClass::Fire(bulletCount, barrelEnd, forward, pAttacker, bIgnoreSpread);
+
+
+	}
+
+///SetNextThink(gpGlobals->curtime);
+	//SetThink(&CFuncTankSniper::ReloadAmmoDelayThink);
+
+	
+}
+
+
+
+
+
+const char *CFuncTankSniper::GetTracerType(void)
+{
+	
+	return "StriderTracer";
+}
+
+void CFuncTankSniper::ReloadAmmoDelayThink()
+{
+	
+	SetThink(&CFuncTankSniper::Think);
+	SetNextThink(gpGlobals->curtime);
+	
+	Msg("Try to reload\n");
+	//SetNextThink(gpGlobals->curtime + 0.1);
+}
+
+void CFuncTankSniper::Think(void)
+{
+
+	//if (IsPlayerManned())
+	///{
+////
+	///	CBasePlayer *pPlayer = AI_GetSinglePlayer();
+
+
+	///	if (pPlayer->m_afButtonPressed & IN_ATTACK2)
+	//	{
+	///		ToggleZoom();
+	///	}
+	///}
+
+
+
+	///if (!IsPlayerManned())
+	//{
+	//	if (m_bInZoom)
+	//	{
+	//		ToggleZoom();
+	////	}
+	///}
+
+
+
+
+	if (IsNPCManned())
+	{
+		Vector vecBarrelEnd = WorldBarrelPosition();
+		Vector vecForward;
+		AngleVectors(GetAbsAngles(), &vecForward);
+		trace_t tr;
+		AI_TraceLine(vecBarrelEnd, TargetPos, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
+		TargetPos = m_vecPaintCursor;
+		m_vecPaintCursor = vecBarrelEnd + vecForward * 1900.0;
+		if (tr.m_pEnt->VPhysicsGetObject())
+		{
+			Fire(1, vecBarrelEnd, vecForward, this, false);
+		}
+
+
+
+	}
+
+
+
+
+	if ( !GetController() )
+	{
+		LaserOff();
+		
+		//Msg("No One using the sniper\n");
+	}
+
+	//if ( m_pBeam )
+	//{
+	///	Vector vecBarrelEnd = WorldBarrelPosition();
+	//	Vector vecForward;
+	////	AngleVectors(GetAbsAngles(), &vecForward);
+
+		//vecInitialAim.x += random->RandomFloat(-vecDeviance.x, vecDeviance.x);
+		//vecInitialAim.y += random->RandomFloat(-vecDeviance.y, vecDeviance.y);
+		//vecInitialAim.z += random->RandomFloat(-vecDeviance.z, vecDeviance.z);
+
+		// The beam is backwards, sortof. The endpoint is the sniper. This is
+	//	// so that the beam can be tapered to very thin where it emits from the sniper.
+	////	m_pBeam->PointsInit(vecForward, vecBarrelEnd);
+	////	///m_pBeam->SetBrightness(255);
+	////	m_pBeam->SetNoise(0);
+	//	m_pBeam->SetWidth(1.0f);
+	//	m_pBeam->SetEndWidth(0);
+	//	m_pBeam->SetScrollRate(0);
+	///	m_pBeam->SetFadeLength(0);
+	//	m_pBeam->SetHaloTexture(sHaloSprite);
+	//	m_pBeam->SetHaloScale(4.0f);
+	///}
+///
+	
+
+	
+	if (ammocount >= 0)
+	{
+		if (IsPlayerManned() || IsNPCManned())//BEAM FUCTIONS
+		{
+			LaserOn();
+			
+		}
+	}
+
+
+	
+	if (ammocount == 0 )
+	{
+		LaserOff();
+	
+		
+
+		/*if ( !IsPlayerManned() )
+		{
+			if (!ammo_shot)
+			{
+				if (aimtimer_noset)
+				{
+					m_aimtimer = gpGlobals->curtime + AimTime + ReloadTime;
+					aimtimer_noset = false;
+					Msg("NPC will shot when passed the aimtime\n");
+				}
+
+
+
+				if (gpGlobals->curtime > m_aimtimer)
+				{
+					aimtimer_noset = true;
+					m_bReadyToFire = true;
+					Msg("NPC Can SHot Now\n");
+
+				}
+			}
+
+		}*/
+		    
+
+
+
+
+		
+			if ( timer_no_set )
+			{
+				m_reloadtimer = gpGlobals->curtime + ReloadTime;
+				timer_no_set = false;
+
+				Msg("Start Reloading\n");
+			}
+			
+	
+			
+
+			if ( gpGlobals->curtime > m_reloadtimer )
+			{
+				//m_bIsnoReloading = false;
+				ammocount = 1;
+				CPASAttenuationFilter filter(this);
+				EmitSound(filter, entindex(), "NPC_Sniper.Reload");
+				Msg("Ammo loaded\n");
+				ammo_shot = false;
+				
+ 				timer_no_set = true;
+				//m_bIsnoReloading = true;
+				
+				if (IsPlayerManned() || IsNPCManned())//BEAM FUCTIONS
+				{
+					LaserOn();
+
+				}
+
+			}
+
+			
+
+
+		
+	}
+
+	
+	
+	if (IsNPCManned() && ammocount >= 0 )
+	{
+		CBaseEntity *pEnemy = GetController()->GetEnemy();
+		if (pEnemy)
+		{
+			if (aimtimer_noset)
+			{
+				m_aimtimer = gpGlobals->curtime + AimTime;
+				aimtimer_noset = false;
+				Msg("NPC will shot when passed the aimtime\n");
+			}
+
+
+
+			if (gpGlobals->curtime > m_aimtimer)
+			{
+				aimtimer_noset = true;
+				m_bReadyToFire = true;
+				Msg("NPC Can SHot Now\n");
+
+			}
+		}
+
+
+	//	if (!pEnemy)
+	//	{
+	//		ShotObject();
+	//		Msg("Sniper shots to objects\n");
+	///	}
+
+
+	}
+	
+
+
+
+	
+
+		//if ( !ammo_shot )
+		//	{ 
+		// Don't aim right at the guy right now.
+		//Vector vecInitialAim;
+		//	Vector vecBarrelEnd = WorldBarrelPosition();
+	  //  Vector vecForward;
+		//AngleVectors(GetAbsAngles(), &vecForward);
+
+		//vecInitialAim.x += random->RandomFloat(-vecDeviance.x, vecDeviance.x);
+		//vecInitialAim.y += random->RandomFloat(-vecDeviance.y, vecDeviance.y);
+		//vecInitialAim.z += random->RandomFloat(-vecDeviance.z, vecDeviance.z);
+
+		// The beam is backwards, sortof. The endpoint is the sniper. This is
+		// so that the beam can be tapered to very thin where it emits from the sniper.
+		///m_pBeam->PointsInit(vecForward, vecBarrelEnd);
+		/////m_pBeam->SetBrightness(255);
+		//m_pBeam->SetNoise(0);
+		///m_pBeam->SetWidth(1.0f);
+		//////m_pBeam->SetEndWidth(0);
+		//m_pBeam->SetScrollRate(0);
+		//m_pBeam->SetFadeLength(0);
+		//m_pBeam->SetHaloTexture(sHaloSprite);
+		///m_pBeam->SetHaloScale(4.0f);
+		///}
+
+
+		// Think faster whilst painting. Higher resolution on the 
+		// beam movement.
+
+	
+			// vecStart is the barrel of the gun (or the laser sight)
+			//vecStart = GetBulletOrigin();
+
+			//float P;
+
+			//if (IsNPCManned())
+			//	{
+			///	if (P > 0.25f && GetEnemy() && GetEnemy()->IsNPC() && !m_bWarnedTargetEntity)
+			///	{
+			//		m_bWarnedTargetEntity = true;
+
+			///			if (GetEnemy()->Classify() == CLASS_PLAYER_ALLY_VITAL && GetEnemy()->MyNPCPointer()->FVisible(this))
+			/////			{
+			//			CSoundEnt::InsertSound(SOUND_DANGER | SOUND_CONTEXT_REACT_TO_SOURCE, GetEnemy()->EarPosition(), 16, 1.0f, this);
+			///			}
+			///	}
+			//	}
+			//GetPaintAim(m_vecPaintStart, vecTarget, clamp(P, 0.0f, 1.0f), &vecCurrentDir);
+
+//#if 1
+///
+	///		float flNoiseScale;
+
+
+	//		flNoiseScale = 1;
+
+
+	////		// mult by P
+	//		vecCurrentDir.x += flNoiseScale * (sin(3 * M_PI * gpGlobals->curtime) * 0.0006);
+	///		vecCurrentDir.y += flNoiseScale * (sin(2 * M_PI * gpGlobals->curtime + 0.5 * M_PI) * 0.0006);
+	//		vecCurrentDir.z += flNoiseScale * (sin(1.5 * M_PI * gpGlobals->curtime + M_PI) * 0.0006);
+//#endi/f
+
+		//	trace_t tr;
+
+		//	UTIL_TraceLine(vecBarrelEnd, TargetPos, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
+
+		//	m_pBeam->SetStartPos(tr.endpos);
+		//	m_pBeam->RelinkBeam();
+
+		//	m_vecPaintCursor = tr.endpos;
+		//}
+
+
+
+	//if (m_pBeam)
+	//{
+	//	if ( IsNPCManned() )
+	//	{
+		//	CAI_BaseNPC *pSniper;
+		//	CAI_BaseNPC *pEnemyNPC;
+		//	pSniper = GetController()->MyNPCPointer();
+
+		//	if (pSniper && pSniper->GetEnemy())
+		//	{
+		//		pEnemyNPC = pSniper->GetEnemy()->MyNPCPointer();
+///
+				// Warn my enemy if they can see the sniper.
+		///		if (pEnemyNPC && GetController() && pEnemyNPC->FVisible(GetController()->WorldSpaceCenter()))
+		///		{
+				//	CSoundEnt::InsertSound(SOUND_DANGER | SOUND_CONTEXT_FROM_SNIPER, pSniper->GetEnemy()->EarPosition(), 16, 1.0f, GetController());
+		//		}
+		//	}
+		//}
+
+
+
+		//if ( IsPlayerManned() )
+	//	{
+	//		Vector WarningPos = m_pBeam->GetAbsEndPos();
+	//		CSoundEnt::InsertSound(SOUND_DANGER | SOUND_CONTEXT_FROM_SNIPER, WarningPos, 16, 1.0f, this);
+	//	}
+	//}
+	
+
+
+	
+
+	
+	
+	
+	
+	
+	
+	//SetThink(&CFuncTankSniper::AimTargetThink);
+	SetNextThink(gpGlobals->curtime + 0.1);
+
+
+
+	BaseClass::Think();
+}
+
+
+void CFuncTankSniper::LaserOff(void)
+{
+	if (m_pBeam)
+	{
+		UTIL_Remove(m_pBeam);
+		m_pBeam = NULL;
+		//Msg("Laser Removed\n");
+	}
+
+	
+}
+
+void CFuncTankSniper::LaserOn(void)
+{
+
+		if (!m_pBeam)
+		{
+			//Msg("Laser Create\n");
+#ifdef MAPBASE
+			m_pBeam = CBeam::BeamCreate(STRING(m_iszBeamName), 1.0f);
+			m_pBeam->SetColor(m_BeamColor.r, m_BeamColor.g, m_BeamColor.b);
+#else
+			m_pBeam = CBeam::BeamCreate("effects/bluelaser1.vmt", 1.0f);
+			m_pBeam->SetColor(0, 100, 255);
+#endif
+		}
+	
+
+
+	Vector vecInitialAim;
+		Vector vecBarrelEnd = WorldBarrelPosition();
+	  Vector vecForward;
+	AngleVectors(GetAbsAngles(), &vecForward);
+
+	//vecInitialAim.x += random->RandomFloat(-vecDeviance.x, vecDeviance.x);
+	//vecInitialAim.y += random->RandomFloat(-vecDeviance.y, vecDeviance.y);
+	//vecInitialAim.z += random->RandomFloat(-vecDeviance.z, vecDeviance.z);
+
+	// The beam is backwards, sortof. The endpoint is the sniper. This is
+	// so that the beam can be tapered to very thin where it emits from the sniper.
+	m_pBeam->PointsInit(TargetPos, vecBarrelEnd);
+	m_pBeam->SetBrightness(255);
+	m_pBeam->SetNoise(0);
+	m_pBeam->SetWidth(1.0f);
+	m_pBeam->SetEndWidth(0);
+	m_pBeam->SetScrollRate(0);
+	m_pBeam->SetFadeLength(0);
+	m_pBeam->SetHaloTexture(sHaloSprite);
+	m_pBeam->SetHaloScale(4.0f);
+
+	trace_t tr;
+
+	AI_TraceLine(vecBarrelEnd, TargetPos, MASK_SHOT, this, COLLISION_GROUP_INTERACTIVE, &tr);
+
+	    TargetPos = m_vecPaintCursor;
+		m_vecPaintCursor = vecBarrelEnd + vecForward * 1900.0;
+		tr.endpos = m_vecPaintCursor;
+	
+		if (tr.m_pEnt)
+		{
+			if ( tr.m_pEnt->VPhysicsGetObject())
+			{
+				Msg("Targeted Entity\n");
+				
+				
+			}
+			if (tr.m_pEnt->IsWorld())
+			{
+				Msg("Targeted World\n");
+				//m_vecPaintCursor = tr.m_pEnt->WorldSpaceCenter() - vecBarrelEnd;
+			}
+				
+			
+
+		}
+		
+		m_pBeam->SetStartPos(tr.endpos);
+		m_pBeam->RelinkBeam();
+		CSoundEnt::InsertSound(SOUND_DANGER | SOUND_CONTEXT_FROM_SNIPER, tr.endpos, 16, 1.0f, this);
+		
+	//}
+
+
+	//Msg("Laser Position Update\n");
+
+	SetNextThink(gpGlobals->curtime + 0.02);
+
+}
+
+
+void CFuncTankSniper::ToggleZoom(void)
+{
+	CBasePlayer *pPlayer = AI_GetSinglePlayer();
+
+	if (pPlayer == NULL)
+		return;
+
+	if (m_bInZoom)
+	{
+		if (pPlayer->SetFOV(this, 0, 0.2f))
+		{
+			m_bInZoom = false;
+		}
+	}
+	else
+	{
+		if (pPlayer->SetFOV(this, 20, 0.1f))
+		{
+			m_bInZoom = true;
+		}
+	}
+}
+
+void CFuncTankSniper::DisableZoom(void)
+{
+	CBasePlayer *pPlayer = AI_GetSinglePlayer();
+
+	if (pPlayer == NULL)
+		return;
+	
+	if (m_bInZoom)
+	{
+		if (pPlayer->SetFOV(this, 0, 0.2f))
+		{
+			m_bInZoom = false;
+		}
+	}
+}
+
+
+
+//void CFuncTankSniper::ShotObject(void)
+//{
+//#define SEARCH_DEPTH	50
+//#define SNIPER_NUM_DECOYS 5
+//#define SNIPER_DECOY_RADIUS	256
+//#define SNIPER_DECOY_MAX_MASS			200.0f
+//	CBaseEntity *pDecoys[SNIPER_NUM_DECOYS];
+//	CBaseEntity *pList[SEARCH_DEPTH];
+//	CBaseEntity	*pCurrent;
+//	int			count;
+//	int			i;
+//	Vector vecTarget = GetAbsOrigin();
+//	Vector vecDelta;
+//	Vector vecForward;
+//	AngleVectors(GetAbsAngles(), &vecForward);
+//
+//	m_flDecoyRadius = SNIPER_DECOY_RADIUS;
+//	m_hDecoyObject = NULL;
+//
+//	for (i = 0; i < SNIPER_NUM_DECOYS; i++)
+//	{
+//		pDecoys[i] = NULL;
+//	}
+//
+//	vecDelta.x = m_flDecoyRadius;
+//	vecDelta.y = m_flDecoyRadius;
+//	vecDelta.z = m_flDecoyRadius;
+//
+//	count = UTIL_EntitiesInBox(pList, SEARCH_DEPTH, vecTarget - vecDelta, vecTarget + vecDelta, 0);
+//
+//	// Now we have the list of entities near the target. 
+//	// Dig through that list and build the list of decoys.
+//	int iIterator = 0;
+//	// (pList)
+//	//
+//		for (i = 0; i < count; i++)
+//		{
+//			pCurrent = pList[i];
+//
+//			if (FClassnameIs(pCurrent, "func_breakable") || FClassnameIs(pCurrent, "prop_physics") || FClassnameIs(pCurrent, "func_physbox"))
+//			{
+//				if (!pCurrent->VPhysicsGetObject())
+//					continue;
+//
+//				if (pCurrent->VPhysicsGetObject()->GetMass() > SNIPER_DECOY_MAX_MASS)
+//				{
+//					// Skip this very heavy object. Probably a car or dumpster.
+//					continue;
+//				}
+//
+//				if (pCurrent->VPhysicsGetObject()->GetGameFlags() & FVPHYSICS_PLAYER_HELD)
+//				{
+//					// Ah! If the player is holding something, try to shoot it!
+//					if (FVisible(pCurrent))
+//					{
+//						m_hDecoyObject = pCurrent;
+//						m_vecDecoyObjectTarget = pCurrent->WorldSpaceCenter();
+//
+//					}
+//				}
+//
+//				// This item meets criteria for a decoy object to shoot at. 
+//
+//				// But have we shot at this item recently? If we HAVE, don't add it.
+//#if 0
+//				if (!HasOldDecoy(pCurrent))
+//#endif
+//				{
+//					pDecoys[iIterator] = pCurrent;
+//
+//					if (iIterator == SNIPER_NUM_DECOYS - 1)
+//					{
+//						break;
+//					}
+//					else
+//					{
+//						iIterator++;
+//					}
+//				}
+//			}
+//		}
+//
+//	//
+//	// try 4 times to pick a random object from the list
+//	// and trace to it. If the trace goes off, that's the object!
+//
+//		for (i = 0; i < 4; i++)
+//		{
+//			CBaseEntity *pProspect;
+//			trace_t		tr;
+//			
+//			// Pick one of the decoys at random.
+//			pProspect = pDecoys[random->RandomInt(0, iIterator - 1)];
+//			if (pProspect)
+//			{
+//				Vector vecDecoyTarget;
+//				Vector vecDirToDecoy;
+//				Vector vecBulletOrigin;
+//
+//				vecBulletOrigin = WorldBarrelPosition();
+//				vecDecoyTarget = pProspect->Get
+//			///	pProspect->CollisionProp()->RandomPointInBounds(Vector(.1, .1, .1), Vector(.6, .6, .6), &vecDecoyTarget);
+//
+//				// When trying to trace to an object using its absmin + some fraction of its size, it's best 
+//				// to lengthen the trace a little beyond the object's bounding box in case it's a more complex
+//				// object, or not axially aligned. 
+//				///vecDirToDecoy = vecDecoyTarget; //- vecBulletOrigin;
+//				//VectorNormalize(vecDirToDecoy);
+//
+//
+//				// Right now, tracing with MASK_BLOCKLOS and checking the fraction as well as the object the trace
+//				//// has hit makes it possible for the decoy behavior to shoot through glass. 
+//				//UTIL_TraceLine(vecBulletOrigin, vecDecoyTarget + vecDirToDecoy ,
+//				///	MASK_BLOCKLOS, this, COLLISION_GROUP_NONE, &tr);
+//			
+//
+//
+//				//if (tr.m_pEnt == pProspect || tr.fraction == 1.0)
+//				//{
+//					// Great! A shot will hit this object.
+//				///	m_hDecoyObject = pProspect;
+//				////	m_vecDecoyObjectTarget = tr.endpos;
+/////
+//					// Throw some noise in, don't always hit the center.
+//				///	Vector vecNoise;
+//				///	pProspect->CollisionProp()->RandomPointInBounds(Vector(0.25, 0.25, 0.25), Vector(0.75, 0.75, 0.75), &vecNoise);
+//				//	m_vecDecoyObjectTarget += vecNoise - pProspect->GetAbsOrigin();
+//
+//			///	}
+//				
+//				CalcNPCEnemyTarget(&vecDecoyTarget);
+//				//AimBarrelAt(m_parentMatrix.WorldToLocal(vecTarget));
+//				Fire(1, vecDecoyTarget, vecForward, this, false);
+//			}
+//		}
+//	
+//	//Vector vecTarget;
+//
+//
+//}
+
+
+#endif
+
+
+
+
+
 

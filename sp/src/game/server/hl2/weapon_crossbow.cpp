@@ -877,6 +877,7 @@ void CWeaponCrossbow::CheckZoomToggle( void )
 {
 	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
 	
+	
 	if ( pPlayer->m_afButtonPressed & IN_ATTACK2 )
 	{
 			ToggleZoom();

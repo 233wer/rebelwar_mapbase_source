@@ -33,6 +33,7 @@
 #include "effect_color_tables.h"
 #include "npc_rollermine.h"
 #include "eventqueue.h"
+
 #ifdef MAPBASE
 #include "CRagdollMagnet.h"
 #endif
@@ -1763,8 +1764,12 @@ bool CProtoSniper::FindDecoyObject( void )
 	CBaseEntity	*pCurrent;
 	int			count;
 	int			i;
-	Vector vecTarget = GetEnemy()->WorldSpaceCenter();
+	
+
 	Vector vecDelta;
+	Vector vecTarget = GetEnemy()->WorldSpaceCenter();;
+
+	
 
 	m_hDecoyObject = NULL;
 	
@@ -3811,5 +3816,9 @@ bool CSniperTarget::KeyValue( const char *szKeyName, const char *szValue )
 }
 
 LINK_ENTITY_TO_CLASS( info_snipertarget, CSniperTarget );
+
+
+
+
 
 

@@ -1074,6 +1074,29 @@ void CNPC_Citizen::GatherConditions()
 {
 	BaseClass::GatherConditions();
 
+	//if (HasCondition(COND_HEAR_DANGER))
+	//{
+	//	CSound *pSound;
+	//	pSound = GetBestSound();
+
+	//	Assert(pSound != NULL);
+	//	if (pSound)
+	//	{
+	//		if (pSound->m_iType &  (SOUND_DANGER | SOUND_CONTEXT_FROM_SNIPER))
+	//		{
+
+
+
+
+
+
+	//		}
+	//	}
+	//}
+
+
+
+
 	if( IsInPlayerSquad() && hl2_episodic.GetBool() )
 	{
 		// Leave the player squad if someone has made me neutral to player.
@@ -4781,6 +4804,9 @@ void CNPC_Citizen::RemoveInsignia()
 	}
 }
 
+
+
+
 //-----------------------------------------------------------------------------
 LINK_ENTITY_TO_CLASS( squadinsignia, CSquadInsignia );
 
@@ -4825,3 +4851,4 @@ int CNPC_Citizen::DrawDebugTextOverlays( void )
 	}
 	return text_offset;
 }
+

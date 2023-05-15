@@ -234,7 +234,7 @@ public:
 			}
 
 #ifdef GAME_DLL
-			Q_strncpy( g_szDefaultPlayerModel, gameinfo->GetString( "player_default_model", "models/player.mdl" ), sizeof( g_szDefaultPlayerModel ) );
+			Q_strncpy( g_szDefaultPlayerModel, gameinfo->GetString( "player_default_model", "models/humans/group03/male_09.mdl" ), sizeof( g_szDefaultPlayerModel ) );
 			g_bDefaultPlayerDrawExternally = gameinfo->GetBool( "player_default_draw_externally", false );
 
 			Q_strncpy( g_szDefaultHandsModel, gameinfo->GetString( "player_default_hands", "models/weapons/v_hands.mdl" ), sizeof( g_szDefaultHandsModel ) );

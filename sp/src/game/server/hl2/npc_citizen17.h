@@ -318,6 +318,7 @@ private:
 
 	//-----------------------------------------------------
 	
+
 	int				m_nInspectActivity;
 	float			m_flNextFearSoundTime;
 	float			m_flStopManhackFlinch;
@@ -380,6 +381,8 @@ private:
 #else // Moved to CNPC_PlayerCompanion
 	CAI_FuncTankBehavior	m_FuncTankBehavior;
 #endif
+
+	
 
 	CHandle<CAI_FollowGoal>	m_hSavedFollowGoalEnt;
 

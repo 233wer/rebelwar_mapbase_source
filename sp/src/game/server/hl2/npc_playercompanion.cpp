@@ -910,8 +910,11 @@ int CNPC_PlayerCompanion::SelectScheduleDanger()
 
 		if ( pSound && (pSound->m_iType & SOUND_DANGER) )
 		{
-			if ( !(pSound->SoundContext() & (SOUND_CONTEXT_MORTAR|SOUND_CONTEXT_FROM_SNIPER)) || IsOkToCombatSpeak() )
-				SpeakIfAllowed( TLK_DANGER );
+			if ((pSound->SoundContext() & (SOUND_CONTEXT_MORTAR | SOUND_CONTEXT_FROM_SNIPER)) || IsOkToCombatSpeak())
+			{
+				SpeakIfAllowed(TLK_DANGER);
+				return SCHED_COWER;
+			}
 
 			if ( HasCondition( COND_PC_SAFE_FROM_MORTAR ) )
 			{

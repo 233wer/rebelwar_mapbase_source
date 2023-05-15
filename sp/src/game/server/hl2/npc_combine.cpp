@@ -2114,7 +2114,7 @@ int CNPC_Combine::SelectSchedule( void )
 				Assert( pSound != NULL );
 				if ( pSound)
 				{
-					if (pSound->m_iType & SOUND_DANGER)
+					if (pSound->m_iType & (SOUND_DANGER | SOUND_CONTEXT_FROM_SNIPER))
 					{
 						// I hear something dangerous, probably need to take cover.
 						// dangerous sound nearby!, call it out
